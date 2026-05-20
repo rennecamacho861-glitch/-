@@ -1,0 +1,930 @@
+{
+  "sourceVersion": "grid-dungeon-audio-iter03-model-requests",
+  "status": "pending_audio_model_renders",
+  "assetRoot": "public/assets/audio/grid-dungeon/model",
+  "promptPack": "CCGS-Data/design/audio/source/grid-dungeon/model-prompts-iter03.json",
+  "assetCount": 0,
+  "eventCount": 64,
+  "assets": [],
+  "plannedRequestCount": 102,
+  "plannedAssets": [
+    {
+      "id": "sfx_explore_footstep_metal_01",
+      "event": "exploration.footstep.metal",
+      "category": "exploration",
+      "targetFile": "sfx_explore_footstep_metal_01.wav",
+      "expectedDurationMs": 190,
+      "criticalCue": false,
+      "visualFallback": "player grid movement"
+    },
+    {
+      "id": "sfx_explore_footstep_metal_02",
+      "event": "exploration.footstep.metal",
+      "category": "exploration",
+      "targetFile": "sfx_explore_footstep_metal_02.wav",
+      "expectedDurationMs": 190,
+      "criticalCue": false,
+      "visualFallback": "player grid movement"
+    },
+    {
+      "id": "sfx_explore_footstep_metal_03",
+      "event": "exploration.footstep.metal",
+      "category": "exploration",
+      "targetFile": "sfx_explore_footstep_metal_03.wav",
+      "expectedDurationMs": 190,
+      "criticalCue": false,
+      "visualFallback": "player grid movement"
+    },
+    {
+      "id": "sfx_explore_footstep_metal_04",
+      "event": "exploration.footstep.metal",
+      "category": "exploration",
+      "targetFile": "sfx_explore_footstep_metal_04.wav",
+      "expectedDurationMs": 190,
+      "criticalCue": false,
+      "visualFallback": "player grid movement"
+    },
+    {
+      "id": "sfx_explore_footstep_rubble_01",
+      "event": "exploration.footstep.rubble",
+      "category": "exploration",
+      "targetFile": "sfx_explore_footstep_rubble_01.wav",
+      "expectedDurationMs": 210,
+      "criticalCue": false,
+      "visualFallback": "player grid movement"
+    },
+    {
+      "id": "sfx_explore_footstep_rubble_02",
+      "event": "exploration.footstep.rubble",
+      "category": "exploration",
+      "targetFile": "sfx_explore_footstep_rubble_02.wav",
+      "expectedDurationMs": 210,
+      "criticalCue": false,
+      "visualFallback": "player grid movement"
+    },
+    {
+      "id": "sfx_explore_footstep_rubble_03",
+      "event": "exploration.footstep.rubble",
+      "category": "exploration",
+      "targetFile": "sfx_explore_footstep_rubble_03.wav",
+      "expectedDurationMs": 210,
+      "criticalCue": false,
+      "visualFallback": "player grid movement"
+    },
+    {
+      "id": "sfx_explore_footstep_wet_01",
+      "event": "exploration.footstep.wet",
+      "category": "exploration",
+      "targetFile": "sfx_explore_footstep_wet_01.wav",
+      "expectedDurationMs": 230,
+      "criticalCue": false,
+      "visualFallback": "player grid movement"
+    },
+    {
+      "id": "sfx_explore_footstep_wet_02",
+      "event": "exploration.footstep.wet",
+      "category": "exploration",
+      "targetFile": "sfx_explore_footstep_wet_02.wav",
+      "expectedDurationMs": 230,
+      "criticalCue": false,
+      "visualFallback": "player grid movement"
+    },
+    {
+      "id": "sfx_explore_wall_bump_01",
+      "event": "exploration.wall.bump",
+      "category": "exploration",
+      "targetFile": "sfx_explore_wall_bump_01.wav",
+      "expectedDurationMs": 340,
+      "criticalCue": false,
+      "visualFallback": "cold wall log line"
+    },
+    {
+      "id": "sfx_explore_wall_bump_02",
+      "event": "exploration.wall.bump",
+      "category": "exploration",
+      "targetFile": "sfx_explore_wall_bump_02.wav",
+      "expectedDurationMs": 340,
+      "criticalCue": false,
+      "visualFallback": "cold wall log line"
+    },
+    {
+      "id": "sfx_explore_wall_scrape_01",
+      "event": "exploration.wall.scrape",
+      "category": "exploration",
+      "targetFile": "sfx_explore_wall_scrape_01.wav",
+      "expectedDurationMs": 420,
+      "criticalCue": false,
+      "visualFallback": "wall-edge movement and log"
+    },
+    {
+      "id": "sfx_explore_wall_scrape_02",
+      "event": "exploration.wall.scrape",
+      "category": "exploration",
+      "targetFile": "sfx_explore_wall_scrape_02.wav",
+      "expectedDurationMs": 420,
+      "criticalCue": false,
+      "visualFallback": "wall-edge movement and log"
+    },
+    {
+      "id": "sfx_explore_loot_offer_01",
+      "event": "exploration.loot.offer",
+      "category": "exploration",
+      "targetFile": "sfx_explore_loot_offer_01.wav",
+      "expectedDurationMs": 520,
+      "criticalCue": true,
+      "visualFallback": "three-choice pickup panel"
+    },
+    {
+      "id": "sfx_explore_pickup_confirm_01",
+      "event": "exploration.pickup.confirm",
+      "category": "exploration",
+      "targetFile": "sfx_explore_pickup_confirm_01.wav",
+      "expectedDurationMs": 300,
+      "criticalCue": false,
+      "visualFallback": "inventory and log update"
+    },
+    {
+      "id": "sfx_explore_pickup_confirm_02",
+      "event": "exploration.pickup.confirm",
+      "category": "exploration",
+      "targetFile": "sfx_explore_pickup_confirm_02.wav",
+      "expectedDurationMs": 300,
+      "criticalCue": false,
+      "visualFallback": "inventory and log update"
+    },
+    {
+      "id": "sfx_explore_pickup_skip_01",
+      "event": "exploration.pickup.skip",
+      "category": "exploration",
+      "targetFile": "sfx_explore_pickup_skip_01.wav",
+      "expectedDurationMs": 260,
+      "criticalCue": false,
+      "visualFallback": "skip log line"
+    },
+    {
+      "id": "sfx_explore_danger_tile_01",
+      "event": "exploration.danger.tile",
+      "category": "exploration",
+      "targetFile": "sfx_explore_danger_tile_01.wav",
+      "expectedDurationMs": 680,
+      "criticalCue": true,
+      "visualFallback": "danger tile color and log"
+    },
+    {
+      "id": "sfx_explore_exit_sting_01",
+      "event": "exploration.exit.sting",
+      "category": "exploration",
+      "targetFile": "sfx_explore_exit_sting_01.wav",
+      "expectedDurationMs": 820,
+      "criticalCue": true,
+      "visualFallback": "exit tile and settlement text"
+    },
+    {
+      "id": "sfx_explore_debris_shift_01",
+      "event": "exploration.debris.shift",
+      "category": "exploration",
+      "targetFile": "sfx_explore_debris_shift_01.wav",
+      "expectedDurationMs": 360,
+      "criticalCue": false,
+      "visualFallback": "debris prop and log"
+    },
+    {
+      "id": "sfx_explore_debris_shift_02",
+      "event": "exploration.debris.shift",
+      "category": "exploration",
+      "targetFile": "sfx_explore_debris_shift_02.wav",
+      "expectedDurationMs": 360,
+      "criticalCue": false,
+      "visualFallback": "debris prop and log"
+    },
+    {
+      "id": "sfx_ambient_wall_lamp_hum_01",
+      "event": "ambient.wall.lamp.hum",
+      "category": "ambient",
+      "targetFile": "sfx_ambient_wall_lamp_hum_01.wav",
+      "expectedDurationMs": 2400,
+      "criticalCue": false,
+      "visualFallback": "visible wall lamps"
+    },
+    {
+      "id": "sfx_ambient_enemy_distant_01",
+      "event": "ambient.enemy.distant",
+      "category": "ambient",
+      "targetFile": "sfx_ambient_enemy_distant_01.wav",
+      "expectedDurationMs": 1500,
+      "criticalCue": true,
+      "visualFallback": "direction hint, red light, log"
+    },
+    {
+      "id": "sfx_ambient_enemy_distant_02",
+      "event": "ambient.enemy.distant",
+      "category": "ambient",
+      "targetFile": "sfx_ambient_enemy_distant_02.wav",
+      "expectedDurationMs": 1500,
+      "criticalCue": true,
+      "visualFallback": "direction hint, red light, log"
+    },
+    {
+      "id": "sfx_ambient_enemy_distant_03",
+      "event": "ambient.enemy.distant",
+      "category": "ambient",
+      "targetFile": "sfx_ambient_enemy_distant_03.wav",
+      "expectedDurationMs": 1500,
+      "criticalCue": true,
+      "visualFallback": "direction hint, red light, log"
+    },
+    {
+      "id": "sfx_ambient_pipe_drip_01",
+      "event": "ambient.pipe.drip",
+      "category": "ambient",
+      "targetFile": "sfx_ambient_pipe_drip_01.wav",
+      "expectedDurationMs": 1900,
+      "criticalCue": false,
+      "visualFallback": "wet floor and dungeon ambience"
+    },
+    {
+      "id": "sfx_ambient_pipe_drip_02",
+      "event": "ambient.pipe.drip",
+      "category": "ambient",
+      "targetFile": "sfx_ambient_pipe_drip_02.wav",
+      "expectedDurationMs": 1900,
+      "criticalCue": false,
+      "visualFallback": "wet floor and dungeon ambience"
+    },
+    {
+      "id": "sfx_ambient_pipe_drip_03",
+      "event": "ambient.pipe.drip",
+      "category": "ambient",
+      "targetFile": "sfx_ambient_pipe_drip_03.wav",
+      "expectedDurationMs": 1900,
+      "criticalCue": false,
+      "visualFallback": "wet floor and dungeon ambience"
+    },
+    {
+      "id": "sfx_ambient_cable_spark_01",
+      "event": "ambient.cable.spark",
+      "category": "ambient",
+      "targetFile": "sfx_ambient_cable_spark_01.wav",
+      "expectedDurationMs": 900,
+      "criticalCue": false,
+      "visualFallback": "broken cable visual"
+    },
+    {
+      "id": "sfx_ambient_cable_spark_02",
+      "event": "ambient.cable.spark",
+      "category": "ambient",
+      "targetFile": "sfx_ambient_cable_spark_02.wav",
+      "expectedDurationMs": 900,
+      "criticalCue": false,
+      "visualFallback": "broken cable visual"
+    },
+    {
+      "id": "sfx_combat_first_sight_01",
+      "event": "encounter.first.sight",
+      "category": "combat",
+      "targetFile": "sfx_combat_first_sight_01.wav",
+      "expectedDurationMs": 620,
+      "criticalCue": true,
+      "visualFallback": "first-sight log and advantage UI"
+    },
+    {
+      "id": "sfx_combat_faceoff_01",
+      "event": "encounter.faceoff",
+      "category": "combat",
+      "targetFile": "sfx_combat_faceoff_01.wav",
+      "expectedDurationMs": 760,
+      "criticalCue": true,
+      "visualFallback": "combat panel opens"
+    },
+    {
+      "id": "sfx_combat_behind_wall_01",
+      "event": "encounter.behind.wall",
+      "category": "combat",
+      "targetFile": "sfx_combat_behind_wall_01.wav",
+      "expectedDurationMs": 900,
+      "criticalCue": true,
+      "visualFallback": "red light or noise hint"
+    },
+    {
+      "id": "sfx_combat_behind_wall_02",
+      "event": "encounter.behind.wall",
+      "category": "combat",
+      "targetFile": "sfx_combat_behind_wall_02.wav",
+      "expectedDurationMs": 900,
+      "criticalCue": true,
+      "visualFallback": "red light or noise hint"
+    },
+    {
+      "id": "sfx_combat_unseen_ranged_01",
+      "event": "encounter.unseen.ranged",
+      "category": "combat",
+      "targetFile": "sfx_combat_unseen_ranged_01.wav",
+      "expectedDurationMs": 820,
+      "criticalCue": true,
+      "visualFallback": "HP change and unseen ranged log"
+    },
+    {
+      "id": "sfx_combat_enemy_step_close_01",
+      "event": "encounter.enemy.step.close",
+      "category": "combat",
+      "targetFile": "sfx_combat_enemy_step_close_01.wav",
+      "expectedDurationMs": 420,
+      "criticalCue": true,
+      "visualFallback": "enemy proximity hint and log"
+    },
+    {
+      "id": "sfx_combat_enemy_step_close_02",
+      "event": "encounter.enemy.step.close",
+      "category": "combat",
+      "targetFile": "sfx_combat_enemy_step_close_02.wav",
+      "expectedDurationMs": 420,
+      "criticalCue": true,
+      "visualFallback": "enemy proximity hint and log"
+    },
+    {
+      "id": "sfx_combat_weapon_ready_01",
+      "event": "encounter.weapon.ready",
+      "category": "combat",
+      "targetFile": "sfx_combat_weapon_ready_01.wav",
+      "expectedDurationMs": 480,
+      "criticalCue": true,
+      "visualFallback": "enemy posture or weapon hint"
+    },
+    {
+      "id": "sfx_combat_weapon_ready_02",
+      "event": "encounter.weapon.ready",
+      "category": "combat",
+      "targetFile": "sfx_combat_weapon_ready_02.wav",
+      "expectedDurationMs": 480,
+      "criticalCue": true,
+      "visualFallback": "enemy posture or weapon hint"
+    },
+    {
+      "id": "sfx_combat_action_commit_01",
+      "event": "combat.action.commit",
+      "category": "combat",
+      "targetFile": "sfx_combat_action_commit_01.wav",
+      "expectedDurationMs": 260,
+      "criticalCue": false,
+      "visualFallback": "selected combat action button"
+    },
+    {
+      "id": "sfx_combat_action_commit_02",
+      "event": "combat.action.commit",
+      "category": "combat",
+      "targetFile": "sfx_combat_action_commit_02.wav",
+      "expectedDurationMs": 260,
+      "criticalCue": false,
+      "visualFallback": "selected combat action button"
+    },
+    {
+      "id": "sfx_combat_read_tell_01",
+      "event": "combat.read.tell",
+      "category": "combat",
+      "targetFile": "sfx_combat_read_tell_01.wav",
+      "expectedDurationMs": 420,
+      "criticalCue": true,
+      "visualFallback": "intel entry and combat log"
+    },
+    {
+      "id": "sfx_combat_breath_player_tense_01",
+      "event": "combat.breath.player.tense",
+      "category": "combat",
+      "targetFile": "sfx_combat_breath_player_tense_01.wav",
+      "expectedDurationMs": 900,
+      "criticalCue": false,
+      "visualFallback": "low HP or combat panel tension"
+    },
+    {
+      "id": "sfx_combat_breath_player_tense_02",
+      "event": "combat.breath.player.tense",
+      "category": "combat",
+      "targetFile": "sfx_combat_breath_player_tense_02.wav",
+      "expectedDurationMs": 900,
+      "criticalCue": false,
+      "visualFallback": "low HP or combat panel tension"
+    },
+    {
+      "id": "sfx_combat_breath_enemy_near_01",
+      "event": "combat.breath.enemy.near",
+      "category": "combat",
+      "targetFile": "sfx_combat_breath_enemy_near_01.wav",
+      "expectedDurationMs": 950,
+      "criticalCue": true,
+      "visualFallback": "enemy proximity hint and log"
+    },
+    {
+      "id": "sfx_combat_breath_enemy_near_02",
+      "event": "combat.breath.enemy.near",
+      "category": "combat",
+      "targetFile": "sfx_combat_breath_enemy_near_02.wav",
+      "expectedDurationMs": 950,
+      "criticalCue": true,
+      "visualFallback": "enemy proximity hint and log"
+    },
+    {
+      "id": "sfx_combat_melee_swing_01",
+      "event": "combat.melee.swing",
+      "category": "combat",
+      "targetFile": "sfx_combat_melee_swing_01.wav",
+      "expectedDurationMs": 300,
+      "criticalCue": false,
+      "visualFallback": "combat log action"
+    },
+    {
+      "id": "sfx_combat_melee_swing_02",
+      "event": "combat.melee.swing",
+      "category": "combat",
+      "targetFile": "sfx_combat_melee_swing_02.wav",
+      "expectedDurationMs": 300,
+      "criticalCue": false,
+      "visualFallback": "combat log action"
+    },
+    {
+      "id": "sfx_combat_melee_swing_03",
+      "event": "combat.melee.swing",
+      "category": "combat",
+      "targetFile": "sfx_combat_melee_swing_03.wav",
+      "expectedDurationMs": 300,
+      "criticalCue": false,
+      "visualFallback": "combat log action"
+    },
+    {
+      "id": "sfx_combat_melee_swing_04",
+      "event": "combat.melee.swing",
+      "category": "combat",
+      "targetFile": "sfx_combat_melee_swing_04.wav",
+      "expectedDurationMs": 300,
+      "criticalCue": false,
+      "visualFallback": "combat log action"
+    },
+    {
+      "id": "sfx_combat_melee_clash_01",
+      "event": "combat.melee.clash",
+      "category": "combat",
+      "targetFile": "sfx_combat_melee_clash_01.wav",
+      "expectedDurationMs": 420,
+      "criticalCue": true,
+      "visualFallback": "simultaneous attack or block log"
+    },
+    {
+      "id": "sfx_combat_melee_clash_02",
+      "event": "combat.melee.clash",
+      "category": "combat",
+      "targetFile": "sfx_combat_melee_clash_02.wav",
+      "expectedDurationMs": 420,
+      "criticalCue": true,
+      "visualFallback": "simultaneous attack or block log"
+    },
+    {
+      "id": "sfx_combat_melee_graze_01",
+      "event": "combat.melee.graze",
+      "category": "combat",
+      "targetFile": "sfx_combat_melee_graze_01.wav",
+      "expectedDurationMs": 330,
+      "criticalCue": true,
+      "visualFallback": "near miss or light damage log"
+    },
+    {
+      "id": "sfx_combat_melee_graze_02",
+      "event": "combat.melee.graze",
+      "category": "combat",
+      "targetFile": "sfx_combat_melee_graze_02.wav",
+      "expectedDurationMs": 330,
+      "criticalCue": true,
+      "visualFallback": "near miss or light damage log"
+    },
+    {
+      "id": "sfx_combat_melee_hit_01",
+      "event": "combat.melee.hit",
+      "category": "combat",
+      "targetFile": "sfx_combat_melee_hit_01.wav",
+      "expectedDurationMs": 430,
+      "criticalCue": true,
+      "visualFallback": "HP change and combat log"
+    },
+    {
+      "id": "sfx_combat_melee_hit_02",
+      "event": "combat.melee.hit",
+      "category": "combat",
+      "targetFile": "sfx_combat_melee_hit_02.wav",
+      "expectedDurationMs": 430,
+      "criticalCue": true,
+      "visualFallback": "HP change and combat log"
+    },
+    {
+      "id": "sfx_combat_melee_hit_03",
+      "event": "combat.melee.hit",
+      "category": "combat",
+      "targetFile": "sfx_combat_melee_hit_03.wav",
+      "expectedDurationMs": 430,
+      "criticalCue": true,
+      "visualFallback": "HP change and combat log"
+    },
+    {
+      "id": "sfx_combat_heavy_wound_01",
+      "event": "combat.heavy.wound",
+      "category": "combat",
+      "targetFile": "sfx_combat_heavy_wound_01.wav",
+      "expectedDurationMs": 760,
+      "criticalCue": true,
+      "visualFallback": "heavy wound text and status"
+    },
+    {
+      "id": "sfx_combat_defend_block_01",
+      "event": "combat.defend.block",
+      "category": "combat",
+      "targetFile": "sfx_combat_defend_block_01.wav",
+      "expectedDurationMs": 430,
+      "criticalCue": true,
+      "visualFallback": "defense log and reduced damage"
+    },
+    {
+      "id": "sfx_combat_defend_block_02",
+      "event": "combat.defend.block",
+      "category": "combat",
+      "targetFile": "sfx_combat_defend_block_02.wav",
+      "expectedDurationMs": 430,
+      "criticalCue": true,
+      "visualFallback": "defense log and reduced damage"
+    },
+    {
+      "id": "sfx_combat_defend_block_03",
+      "event": "combat.defend.block",
+      "category": "combat",
+      "targetFile": "sfx_combat_defend_block_03.wav",
+      "expectedDurationMs": 430,
+      "criticalCue": true,
+      "visualFallback": "defense log and reduced damage"
+    },
+    {
+      "id": "sfx_combat_defend_strain_01",
+      "event": "combat.defend.strain",
+      "category": "combat",
+      "targetFile": "sfx_combat_defend_strain_01.wav",
+      "expectedDurationMs": 520,
+      "criticalCue": true,
+      "visualFallback": "defense log and posture text"
+    },
+    {
+      "id": "sfx_combat_dodge_left_01",
+      "event": "combat.dodge.left",
+      "category": "combat",
+      "targetFile": "sfx_combat_dodge_left_01.wav",
+      "expectedDurationMs": 330,
+      "criticalCue": false,
+      "visualFallback": "left dodge button and log"
+    },
+    {
+      "id": "sfx_combat_dodge_left_02",
+      "event": "combat.dodge.left",
+      "category": "combat",
+      "targetFile": "sfx_combat_dodge_left_02.wav",
+      "expectedDurationMs": 330,
+      "criticalCue": false,
+      "visualFallback": "left dodge button and log"
+    },
+    {
+      "id": "sfx_combat_dodge_right_01",
+      "event": "combat.dodge.right",
+      "category": "combat",
+      "targetFile": "sfx_combat_dodge_right_01.wav",
+      "expectedDurationMs": 330,
+      "criticalCue": false,
+      "visualFallback": "right dodge button and log"
+    },
+    {
+      "id": "sfx_combat_dodge_right_02",
+      "event": "combat.dodge.right",
+      "category": "combat",
+      "targetFile": "sfx_combat_dodge_right_02.wav",
+      "expectedDurationMs": 330,
+      "criticalCue": false,
+      "visualFallback": "right dodge button and log"
+    },
+    {
+      "id": "sfx_combat_dodge_success_01",
+      "event": "combat.dodge.success",
+      "category": "combat",
+      "targetFile": "sfx_combat_dodge_success_01.wav",
+      "expectedDurationMs": 440,
+      "criticalCue": true,
+      "visualFallback": "advantage and combat log"
+    },
+    {
+      "id": "sfx_combat_dodge_fail_01",
+      "event": "combat.dodge.fail",
+      "category": "combat",
+      "targetFile": "sfx_combat_dodge_fail_01.wav",
+      "expectedDurationMs": 520,
+      "criticalCue": true,
+      "visualFallback": "damage or failed dodge log"
+    },
+    {
+      "id": "sfx_combat_shove_01",
+      "event": "combat.shove",
+      "category": "combat",
+      "targetFile": "sfx_combat_shove_01.wav",
+      "expectedDurationMs": 460,
+      "criticalCue": true,
+      "visualFallback": "forced position or advantage log"
+    },
+    {
+      "id": "sfx_combat_shove_02",
+      "event": "combat.shove",
+      "category": "combat",
+      "targetFile": "sfx_combat_shove_02.wav",
+      "expectedDurationMs": 460,
+      "criticalCue": true,
+      "visualFallback": "forced position or advantage log"
+    },
+    {
+      "id": "sfx_combat_close_distance_01",
+      "event": "combat.close.distance",
+      "category": "combat",
+      "targetFile": "sfx_combat_close_distance_01.wav",
+      "expectedDurationMs": 420,
+      "criticalCue": true,
+      "visualFallback": "enemy closes range log"
+    },
+    {
+      "id": "sfx_combat_retreat_step_01",
+      "event": "combat.retreat.step",
+      "category": "combat",
+      "targetFile": "sfx_combat_retreat_step_01.wav",
+      "expectedDurationMs": 470,
+      "criticalCue": true,
+      "visualFallback": "escape or distance log"
+    },
+    {
+      "id": "sfx_combat_advantage_window_01",
+      "event": "combat.advantage.window",
+      "category": "combat",
+      "targetFile": "sfx_combat_advantage_window_01.wav",
+      "expectedDurationMs": 620,
+      "criticalCue": true,
+      "visualFallback": "advantage-window UI"
+    },
+    {
+      "id": "sfx_combat_flee_success_01",
+      "event": "combat.flee.success",
+      "category": "combat",
+      "targetFile": "sfx_combat_flee_success_01.wav",
+      "expectedDurationMs": 640,
+      "criticalCue": true,
+      "visualFallback": "disengage and position change"
+    },
+    {
+      "id": "sfx_combat_flee_fail_01",
+      "event": "combat.flee.fail",
+      "category": "combat",
+      "targetFile": "sfx_combat_flee_fail_01.wav",
+      "expectedDurationMs": 560,
+      "criticalCue": true,
+      "visualFallback": "failed flee log and enemy bonus"
+    },
+    {
+      "id": "sfx_combat_persuade_attempt_01",
+      "event": "combat.persuade.attempt",
+      "category": "combat",
+      "targetFile": "sfx_combat_persuade_attempt_01.wav",
+      "expectedDurationMs": 540,
+      "criticalCue": false,
+      "visualFallback": "persuade button and log"
+    },
+    {
+      "id": "sfx_combat_persuade_success_01",
+      "event": "combat.persuade.success",
+      "category": "combat",
+      "targetFile": "sfx_combat_persuade_success_01.wav",
+      "expectedDurationMs": 760,
+      "criticalCue": true,
+      "visualFallback": "cooperation or encounter close state"
+    },
+    {
+      "id": "sfx_combat_persuade_fail_01",
+      "event": "combat.persuade.fail",
+      "category": "combat",
+      "targetFile": "sfx_combat_persuade_fail_01.wav",
+      "expectedDurationMs": 620,
+      "criticalCue": true,
+      "visualFallback": "failed persuade log"
+    },
+    {
+      "id": "sfx_item_pistol_fire_01",
+      "event": "item.pistol.fire",
+      "category": "item",
+      "targetFile": "sfx_item_pistol_fire_01.wav",
+      "expectedDurationMs": 620,
+      "criticalCue": true,
+      "visualFallback": "gunshot log and ammo count"
+    },
+    {
+      "id": "sfx_item_pistol_fire_02",
+      "event": "item.pistol.fire",
+      "category": "item",
+      "targetFile": "sfx_item_pistol_fire_02.wav",
+      "expectedDurationMs": 620,
+      "criticalCue": true,
+      "visualFallback": "gunshot log and ammo count"
+    },
+    {
+      "id": "sfx_item_pistol_fire_03",
+      "event": "item.pistol.fire",
+      "category": "item",
+      "targetFile": "sfx_item_pistol_fire_03.wav",
+      "expectedDurationMs": 620,
+      "criticalCue": true,
+      "visualFallback": "gunshot log and ammo count"
+    },
+    {
+      "id": "sfx_item_pistol_empty_01",
+      "event": "item.pistol.empty",
+      "category": "item",
+      "targetFile": "sfx_item_pistol_empty_01.wav",
+      "expectedDurationMs": 260,
+      "criticalCue": true,
+      "visualFallback": "zero ammo and log"
+    },
+    {
+      "id": "sfx_item_pistol_reload_01",
+      "event": "item.pistol.reload",
+      "category": "item",
+      "targetFile": "sfx_item_pistol_reload_01.wav",
+      "expectedDurationMs": 650,
+      "criticalCue": true,
+      "visualFallback": "ammo count update"
+    },
+    {
+      "id": "sfx_item_pistol_reload_02",
+      "event": "item.pistol.reload",
+      "category": "item",
+      "targetFile": "sfx_item_pistol_reload_02.wav",
+      "expectedDurationMs": 650,
+      "criticalCue": true,
+      "visualFallback": "ammo count update"
+    },
+    {
+      "id": "sfx_item_old_magazine_rattle_01",
+      "event": "item.old.magazine.rattle",
+      "category": "item",
+      "targetFile": "sfx_item_old_magazine_rattle_01.wav",
+      "expectedDurationMs": 520,
+      "criticalCue": true,
+      "visualFallback": "old magazine item and log"
+    },
+    {
+      "id": "sfx_item_longknife_swing_01",
+      "event": "item.longknife.swing",
+      "category": "item",
+      "targetFile": "sfx_item_longknife_swing_01.wav",
+      "expectedDurationMs": 330,
+      "criticalCue": false,
+      "visualFallback": "combat log"
+    },
+    {
+      "id": "sfx_item_longknife_swing_02",
+      "event": "item.longknife.swing",
+      "category": "item",
+      "targetFile": "sfx_item_longknife_swing_02.wav",
+      "expectedDurationMs": 330,
+      "criticalCue": false,
+      "visualFallback": "combat log"
+    },
+    {
+      "id": "sfx_item_longknife_throw_01",
+      "event": "item.longknife.throw",
+      "category": "item",
+      "targetFile": "sfx_item_longknife_throw_01.wav",
+      "expectedDurationMs": 610,
+      "criticalCue": true,
+      "visualFallback": "knife removed and damage log"
+    },
+    {
+      "id": "sfx_item_trap_place_01",
+      "event": "item.trap.place",
+      "category": "item",
+      "targetFile": "sfx_item_trap_place_01.wav",
+      "expectedDurationMs": 520,
+      "criticalCue": true,
+      "visualFallback": "trap icon and placement log"
+    },
+    {
+      "id": "sfx_item_trap_trigger_01",
+      "event": "item.trap.trigger",
+      "category": "item",
+      "targetFile": "sfx_item_trap_trigger_01.wav",
+      "expectedDurationMs": 760,
+      "criticalCue": true,
+      "visualFallback": "red light and exposed position log"
+    },
+    {
+      "id": "sfx_item_bandage_use_01",
+      "event": "item.bandage.use",
+      "category": "item",
+      "targetFile": "sfx_item_bandage_use_01.wav",
+      "expectedDurationMs": 760,
+      "criticalCue": true,
+      "visualFallback": "HP and bandage log"
+    },
+    {
+      "id": "sfx_item_glasses_intel_01",
+      "event": "item.glasses.intel",
+      "category": "item",
+      "targetFile": "sfx_item_glasses_intel_01.wav",
+      "expectedDurationMs": 520,
+      "criticalCue": true,
+      "visualFallback": "intel panel and log"
+    },
+    {
+      "id": "sfx_item_glowstick_activate_01",
+      "event": "item.glowstick.activate",
+      "category": "item",
+      "targetFile": "sfx_item_glowstick_activate_01.wav",
+      "expectedDurationMs": 720,
+      "criticalCue": true,
+      "visualFallback": "vision increase and log"
+    },
+    {
+      "id": "sfx_item_echo_needle_01",
+      "event": "item.echo.needle",
+      "category": "item",
+      "targetFile": "sfx_item_echo_needle_01.wav",
+      "expectedDurationMs": 850,
+      "criticalCue": true,
+      "visualFallback": "direction hint and log"
+    },
+    {
+      "id": "sfx_ui_button_click_01",
+      "event": "ui.button.click",
+      "category": "ui",
+      "targetFile": "sfx_ui_button_click_01.wav",
+      "expectedDurationMs": 120,
+      "criticalCue": false,
+      "visualFallback": "button state"
+    },
+    {
+      "id": "sfx_ui_button_click_02",
+      "event": "ui.button.click",
+      "category": "ui",
+      "targetFile": "sfx_ui_button_click_02.wav",
+      "expectedDurationMs": 120,
+      "criticalCue": false,
+      "visualFallback": "button state"
+    },
+    {
+      "id": "sfx_ui_action_disabled_01",
+      "event": "ui.action.disabled",
+      "category": "ui",
+      "targetFile": "sfx_ui_action_disabled_01.wav",
+      "expectedDurationMs": 190,
+      "criticalCue": false,
+      "visualFallback": "disabled style"
+    },
+    {
+      "id": "sfx_ui_panel_open_01",
+      "event": "ui.panel.open",
+      "category": "ui",
+      "targetFile": "sfx_ui_panel_open_01.wav",
+      "expectedDurationMs": 280,
+      "criticalCue": false,
+      "visualFallback": "panel appears"
+    },
+    {
+      "id": "sfx_ui_log_message_01",
+      "event": "ui.log.message",
+      "category": "ui",
+      "targetFile": "sfx_ui_log_message_01.wav",
+      "expectedDurationMs": 160,
+      "criticalCue": false,
+      "visualFallback": "new log line"
+    },
+    {
+      "id": "music_exploration_bed_loop_01",
+      "event": "music.exploration.bed",
+      "category": "music",
+      "targetFile": "music_exploration_bed_loop_01.wav",
+      "expectedDurationMs": 12000,
+      "criticalCue": false,
+      "visualFallback": "exploration visual state"
+    },
+    {
+      "id": "music_combat_tension_loop_01",
+      "event": "music.combat.tension",
+      "category": "music",
+      "targetFile": "music_combat_tension_loop_01.wav",
+      "expectedDurationMs": 9000,
+      "criticalCue": false,
+      "visualFallback": "combat panel and danger state"
+    },
+    {
+      "id": "music_advantage_pulse_loop_01",
+      "event": "music.advantage.pulse",
+      "category": "music",
+      "targetFile": "music_advantage_pulse_loop_01.wav",
+      "expectedDurationMs": 6000,
+      "criticalCue": false,
+      "visualFallback": "advantage-window UI"
+    }
+  ]
+}
