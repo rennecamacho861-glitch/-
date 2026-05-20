@@ -2,6 +2,7 @@ node_modules/
 dist/
 .test-build/
 .npm-cache/
+_public-upload*/
 .env
 .DS_Store
 *.log

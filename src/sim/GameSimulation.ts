@@ -394,18 +394,19 @@ export class GameSimulation implements SimulationPort {
   continueFight(choice: AdvantagePressChoice = "pressTempo"): void {
     const encounter = this.state.encounter;
     if (!encounter || encounter.phase !== "advantageWindow" || encounter.advantage.owner !== "player") return;
-    const pressKey = `${this.state.player.id}:${choice}`;
-    if (encounter.pressChoicesUsed[pressKey]) {
-      this.pushLog("同场照面里，这种继续战斗兑现已经用过。");
-      this.emit();
-      return;
-    }
-    encounter.pressChoicesUsed[pressKey] = true;
     const bonusTarget = bonusTargetForPressChoice(choice);
     encounter.playerBonus = { target: bonusTarget, amount: 1 };
     encounter.advantage = { owner: null, source: null, bonusAvailable: false };
     encounter.phase = "chooseAction";
     this.pushLog(`你放弃安全出口，把优势压到下一次${this.bonusLabel(bonusTarget)}。`);
+    this.pushFeedback({
+      kind: "advantage-press",
+      title: "续战压注",
+      body: bonusTarget === "damage" ? "你把优势压进下一动作回合：近战伤害 +1。" : "你把优势压进下一动作回合：速度 +1。",
+      tone: "advantage",
+      round: encounter.round,
+      durationMs: 1000
+    });
     this.emit();
   }
 

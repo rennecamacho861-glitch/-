@@ -25,6 +25,17 @@ const hud = hudRoot;
 let activeFeedback: FeedbackEvent | undefined;
 const feedbackQueue: FeedbackEvent[] = [];
 const seenFeedbackIds = new Set<string>();
+type TutorialPreference = "on" | "off";
+type TutorialMessage = {
+  id: string;
+  title: string;
+  body: string;
+};
+
+const tutorialPreferenceKey = "zhaomian-tutorial-v1";
+let tutorialPreference: TutorialPreference | null = readTutorialPreference();
+let activeTutorial: TutorialMessage | undefined;
+const shownTutorialIds = new Set<string>();
 
 const actionLabels = {
   attack: "进攻",
@@ -80,8 +91,10 @@ function renderHud(): void {
         ${icon}
         <span class="tool-copy">
           <span class="tool-label">${escapeHtml(displayName)}</span>
-          <span class="tool-hint">${escapeHtml(description)}</span>
-          <span class="tool-limit">${escapeHtml(limit)}</span>
+          <span class="tool-tooltip" role="tooltip">
+            <span class="tool-hint">${escapeHtml(description)}</span>
+            <span class="tool-limit">${escapeHtml(limit)}</span>
+          </span>
         </span>
         ${charges}
       </button>`;
@@ -173,6 +186,7 @@ function renderHud(): void {
       </section>`
     : "";
   const feedbackToast = activeFeedback ? feedbackToastMarkup(activeFeedback) : "";
+  const tutorialLayer = !activeFeedback ? tutorialLayerMarkup(state) : "";
 
   hud.innerHTML = `
     <main class="hud-shell">
@@ -207,6 +221,7 @@ function renderHud(): void {
         <button data-command="restart">重开</button>
       </section>
       ${feedbackToast}
+      ${tutorialLayer}
       ${pickupPanel}
       ${battlePanel}
       ${outcome}
@@ -231,8 +246,16 @@ hud.addEventListener("click", (event) => {
   const item = button.dataset.item as ItemId | undefined;
   const pickupItem = button.dataset.pickup as ItemId | undefined;
   const special = button.dataset.special;
+  const tutorialAction = button.dataset.tutorial;
+
+  if (tutorialAction) {
+    handleTutorialAction(tutorialAction);
+    renderHud();
+    return;
+  }
 
   if (activeFeedback) return;
+  if (tutorialPreference === null || activeTutorial) return;
 
   if (command === "restart" || button.dataset.reset) {
     clearFeedbackToast();
@@ -253,6 +276,7 @@ hud.addEventListener("click", (event) => {
 window.addEventListener("keydown", (event) => {
   if (simulation.snapshot().outcome) return;
   if (activeFeedback) return;
+  if (tutorialPreference === null || activeTutorial) return;
   if (event.key === "ArrowUp" || event.key.toLowerCase() === "w") simulation.move(0, -1);
   if (event.key === "ArrowDown" || event.key.toLowerCase() === "s") simulation.move(0, 1);
   if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") simulation.move(-1, 0);
@@ -306,6 +330,121 @@ function healthFeedbackMarkup(feedback: { overlayClass: string; bloodOpacity: st
     <div class="health-breath-layer"></div>
     <div class="health-heartbeat-layer"></div>
   </div>`;
+}
+
+function tutorialLayerMarkup(state: ReturnType<SimulationPort["snapshot"]>): string {
+  if (tutorialPreference === null) {
+    return `<aside class="tutorial-panel tutorial-prompt" role="dialog" aria-modal="true" aria-label="新手教程">
+      <span class="eyebrow">新手教程</span>
+      <h2>需要一轮简短教学吗？</h2>
+      <p>教程会在第一次遇到拾取、视野、敌人和照面时弹出提示；关闭后不会再打断游玩。</p>
+      <div class="tutorial-actions">
+        <button data-tutorial="enable">需要</button>
+        <button data-tutorial="disable">不需要</button>
+      </div>
+    </aside>`;
+  }
+
+  if (tutorialPreference !== "on") return "";
+  if (!activeTutorial) activeTutorial = nextTutorialMessage(state);
+  if (!activeTutorial) return "";
+  return `<aside class="tutorial-panel" role="dialog" aria-modal="true" aria-label="${escapeHtml(activeTutorial.title)}">
+    <span class="eyebrow">教学</span>
+    <h2>${escapeHtml(activeTutorial.title)}</h2>
+    <p>${escapeHtml(activeTutorial.body)}</p>
+    <div class="tutorial-actions">
+      <button data-tutorial="next">知道了</button>
+      <button data-tutorial="disable">关闭教程</button>
+    </div>
+  </aside>`;
+}
+
+function nextTutorialMessage(state: ReturnType<SimulationPort["snapshot"]>): TutorialMessage | undefined {
+  const messages: TutorialMessage[] = [
+    {
+      id: "goal",
+      title: "目标：搜、打、撤",
+      body: "你要在黑暗迷宫里捡道具、判断照面风险，并在被击倒前从出口撤离。WASD 或方向键每次移动一格，每走一步都会推进敌人行动。"
+    },
+    {
+      id: "pickup",
+      title: "道具是三选一构筑",
+      body: "踩到道具节点会弹出三件候选，选一件加入背包，未选项会移除。拾取选择不额外花回合；背包里的道具说明可悬浮查看。"
+    },
+    {
+      id: "vision",
+      title: "视野决定谁先下注",
+      body: "亮区是当前看见的范围，暗区是已探索记忆，墙会阻断视线。谁先看见对方，谁就可能拿到开局优势；敌人视野也可能比你远。"
+    },
+    {
+      id: "items",
+      title: "道具有主动和自动触发",
+      body: "右侧背包可点击主动道具；被动道具会在满足条件时自动生效。部分局外道具会花费回合，意味着敌人也会移动和拾取。"
+    },
+    {
+      id: "enemy",
+      title: "敌人也会成长",
+      body: "敌人没有固定职业，会按随机属性、手上道具和迷宫拾取慢慢变强。听到红光、枪声或提示时，先判断是否该绕开。"
+    },
+    {
+      id: "combat",
+      title: "照面：进攻、防御、左右闪",
+      body: "进攻比速度和力量；防御稳定减伤并读信息；左右闪要猜攻击方向，猜对更容易躲开。信息越多，动作选择越像读牌。"
+    },
+    {
+      id: "advantage",
+      title: "优势是出口，也是赌注",
+      body: "获得优势后可以逃跑、说服，或继续战斗。继续战斗会把优势换成下一动作回合的伤害或速度加成；再次获得优势可以再次压注。"
+    }
+  ];
+
+  for (const message of messages) {
+    if (shownTutorialIds.has(message.id)) continue;
+    if (message.id === "goal") return message;
+    if (message.id === "pickup" && state.pendingPickupOffer) return message;
+    if (message.id === "vision" && state.turn > 0 && !state.encounter && !state.pendingPickupOffer) return message;
+    if (message.id === "items" && state.inventory.length > 0 && !state.encounter && !state.pendingPickupOffer) return message;
+    if (message.id === "enemy" && (state.map.hints.length > 0 || state.encounter)) return message;
+    if (message.id === "combat" && state.encounter) return message;
+    if (message.id === "advantage" && state.encounter?.phase === "advantageWindow" && state.encounter.advantage.owner === "player") return message;
+  }
+  return undefined;
+}
+
+function handleTutorialAction(action: string): void {
+  if (action === "enable") {
+    tutorialPreference = "on";
+    writeTutorialPreference("on");
+    activeTutorial = undefined;
+    return;
+  }
+  if (action === "disable") {
+    tutorialPreference = "off";
+    writeTutorialPreference("off");
+    activeTutorial = undefined;
+    return;
+  }
+  if (action === "next" && activeTutorial) {
+    shownTutorialIds.add(activeTutorial.id);
+    activeTutorial = undefined;
+  }
+}
+
+function readTutorialPreference(): TutorialPreference | null {
+  try {
+    const value = globalThis.localStorage?.getItem(tutorialPreferenceKey);
+    return value === "on" || value === "off" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeTutorialPreference(value: TutorialPreference): void {
+  try {
+    globalThis.localStorage?.setItem(tutorialPreferenceKey, value);
+  } catch {
+    // Local storage may be unavailable in private or embedded contexts; session state still works.
+  }
 }
 
 function clearFeedbackToast(): void {

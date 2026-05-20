@@ -324,7 +324,7 @@ h2 {
   justify-content: flex-start;
   gap: 6px;
   min-width: 0;
-  min-height: 68px;
+  min-height: 52px;
   border-left-width: 3px;
   padding: 7px 8px;
 }
@@ -404,7 +404,7 @@ h2 {
   flex: 1 1 auto;
   min-width: 0;
   display: grid;
-  gap: 2px;
+  gap: 0;
   text-align: left;
 }
 
@@ -415,14 +415,50 @@ h2 {
   white-space: nowrap;
 }
 
-.tool-hint,
-.tool-limit,
+.tool-tooltip,
 .pickup-limit {
   display: block;
   min-width: 0;
   color: rgba(238, 231, 216, 0.62);
   font-size: 10px;
   line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.tool-tooltip {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 8px);
+  z-index: 9;
+  display: none;
+  width: min(260px, calc(100vw - 56px));
+  border: 1px solid rgba(238, 231, 216, 0.18);
+  border-left: 3px solid var(--rarity-border, rgba(112, 184, 173, 0.6));
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(18, 22, 23, 0.99), rgba(5, 7, 8, 0.99)),
+    repeating-linear-gradient(135deg, rgba(112, 184, 173, 0.04) 0 1px, transparent 1px 7px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 176, 0.08),
+    0 14px 36px rgba(0, 0, 0, 0.48);
+  padding: 9px;
+  pointer-events: none;
+}
+
+.tool-button:hover .tool-tooltip,
+.tool-button:focus-visible .tool-tooltip,
+.tool-button:focus-within .tool-tooltip {
+  display: grid;
+  gap: 5px;
+}
+
+.tool-hint,
+.tool-limit {
+  display: block;
+  min-width: 0;
+  color: rgba(238, 231, 216, 0.74);
+  font-size: 12px;
+  line-height: 1.38;
   overflow-wrap: anywhere;
 }
 
@@ -509,6 +545,49 @@ small {
   backdrop-filter: blur(10px);
   animation: feedback-toast-in 160ms ease both;
   overflow: hidden;
+}
+
+.tutorial-panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  width: min(460px, calc(100vw - 48px));
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(112, 184, 173, 0.34);
+  border-left: 4px solid rgba(213, 170, 85, 0.82);
+  border-radius: var(--ui-radius);
+  background:
+    linear-gradient(180deg, rgba(14, 18, 19, 0.98), rgba(5, 7, 8, 0.98)),
+    repeating-linear-gradient(135deg, rgba(213, 170, 85, 0.045) 0 1px, transparent 1px 8px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 176, 0.09),
+    0 24px 70px rgba(0, 0, 0, 0.5);
+  padding: 16px;
+  pointer-events: auto;
+  backdrop-filter: blur(12px);
+  animation: feedback-toast-in 160ms ease both;
+}
+
+.tutorial-panel h2 {
+  margin-top: 4px;
+  font-size: 20px;
+}
+
+.tutorial-panel p {
+  margin-top: 10px;
+  color: rgba(238, 231, 216, 0.76);
+  line-height: 1.58;
+}
+
+.tutorial-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.tutorial-actions button {
+  flex: 1 1 0;
 }
 
 .feedback-toast::before {
@@ -598,6 +677,17 @@ small {
 .feedback-toast.kind-gunshot::before {
   background: linear-gradient(90deg, rgba(232, 132, 48, 0.34), transparent 42%);
   animation: gunshot-window-flash 360ms ease-out both;
+}
+
+.feedback-toast.kind-advantage-press {
+  border-color: rgba(220, 184, 92, 0.8);
+}
+
+.feedback-toast.kind-advantage-press::before {
+  background:
+    radial-gradient(circle at 18% 50%, rgba(220, 184, 92, 0.26), transparent 28%),
+    linear-gradient(90deg, transparent, rgba(112, 184, 173, 0.14), transparent);
+  animation: heal-window-pulse 820ms ease-out both;
 }
 
 @keyframes feedback-toast-in {
@@ -1088,6 +1178,17 @@ small {
   .feedback-toast {
     bottom: 286px;
     width: min(460px, calc(100vw - 24px));
+  }
+
+  .tool-tooltip {
+    top: calc(100% + 6px);
+    right: auto;
+    left: 0;
+    width: min(260px, calc(100vw - 36px));
+  }
+
+  .tutorial-panel {
+    width: min(440px, calc(100vw - 24px));
   }
 
   .battle-panel,

@@ -543,6 +543,7 @@ export type FeedbackEvent = {
     | "persuasion-intel"
     | "enemy-flee"
     | "enemy-defeated"
+    | "advantage-press"
     | "item-heal"
     | "item-use"
     | "item-reload"
