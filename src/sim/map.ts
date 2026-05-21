@@ -70,7 +70,7 @@ const MAX_STRAIGHT_OPEN_EDGES = 4;
 const ENEMY_SURNAMES = ["陈", "林", "赵", "沈", "顾", "许", "周", "宋", "唐", "韩", "陆", "秦"];
 const ENEMY_GIVEN = ["岚", "朔", "栀", "烬", "砚", "舟", "临", "照", "衡", "隼", "棠", "珩", "霁", "峤", "隅", "澈"];
 
-const STARTER_RARE_ITEMS: ItemId[] = ["echo", "pistol", "bandage"];
+const STARTER_RARE_ITEMS: ItemId[] = ["echo", "pistol", "bandage", "photon-cut"];
 
 /** Creates the fixed prototype map with tile contents, edge-wall blockers, and rare generation counts. */
 export function createMap(seed: string): { map: MapState; playerStart: Position; rareItemAppearances: RareItemAppearanceCounts } {

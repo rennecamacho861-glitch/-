@@ -16,9 +16,14 @@ export type EffectUiText = {
 
 const UI_TEXT_OVERRIDES: Partial<Record<ItemId, Partial<ItemUiText>>> = {
   pistol: {
-    uiShort: "视野内 4 格射击，命中造成 3 伤害；默认 5 发，弹夹可补到 5 发。",
+    uiShort: "视野内 4 格射击，命中造成 3 伤害；默认 6 发，弹夹可补到 6 发。",
     uiLimit: "照面内外都可开火；需要视野和直线射线；弹药有限。",
-    uiEnemyCounter: "找墙体断线或赌对方向闪避；防御能削掉一部分伤害。"
+    uiEnemyCounter: "找墙体断线或赌对方向闪避；防御不能减免这把枪。"
+  },
+  "photon-cut": {
+    uiShort: "支付优势出刀；1-2 优势造成 2 伤害，3 优势以上耗尽优势造成优势 x3 伤害。",
+    uiLimit: "照面中使用；需要至少 1 点优势；每回合主动道具仍只限 1 件。",
+    uiEnemyCounter: "别让持有者存到 3 点优势；用逃跑、压视野或抢先重伤打断。"
   },
   bandage: {
     uiShort: "战斗外包扎伤口，回复 3 点生命；可以反复使用。",
@@ -51,14 +56,14 @@ const UI_TEXT_OVERRIDES: Partial<Record<ItemId, Partial<ItemUiText>>> = {
     uiEnemyCounter: "回响只圈出四格；离开回响区、隔墙移动或换线都能让判断变钝。"
   },
   "old-magazine": {
-    uiShort: "战斗外换弹工具，花费 2 回合给手枪 +2 发，最多补到 5 发。",
+    uiShort: "战斗外换弹工具，花费 2 回合给左轮 +2 发，最多补到 6 发。",
     uiLimit: "无限使用；无枪或满弹不能启动，换弹期间进入照面会失败。",
-    uiEnemyCounter: "逼对方在换弹时照面，或让手枪空弹前先消耗它的节奏。"
+    uiEnemyCounter: "逼对方在换弹时照面，或让左轮空弹前先消耗它的节奏。"
   },
   "smoke-ball": {
-    uiShort: "优势窗口使用；本次逃跑 +20%，并短暂压低双方视野。",
-    uiLimit: "需要优势窗口；持续 2 回合；同一回合主动道具仍只限 1 件。",
-    uiEnemyCounter: "别让对方拿到优势窗口；有偏光片时可免疫烟雾视野惩罚。"
+    uiShort: "支付 1 点优势使用；本次逃跑 +20%，并短暂压低双方视野。",
+    uiLimit: "持续 2 回合；同一回合主动道具仍只限 1 件。",
+    uiEnemyCounter: "别让对方积累优势；有偏光片时可免疫烟雾视野惩罚。"
   },
   "wood-shield": {
     uiShort: "反应使用；下一次受伤 -2，若是远程伤害则只 -1，然后破碎。",
@@ -67,8 +72,8 @@ const UI_TEXT_OVERRIDES: Partial<Record<ItemId, Partial<ItemUiText>>> = {
   },
   "marked-coin": {
     uiShort: "说服支付时 +1，并判断对方是否偏好支付。",
-    uiLimit: "支付后移除；说服仍需要优势窗口。",
-    uiEnemyCounter: "不给对方优势窗口，或保留支付物对冲它的说服。"
+    uiLimit: "支付后移除；说服需要支付 1 点优势。",
+    uiEnemyCounter: "不给对方积累优势，或保留支付物对冲它的说服。"
   },
   "salve-tin": {
     uiShort: "战斗内外都可用，立即回复 1 点生命。",
@@ -160,7 +165,7 @@ function buildLimitText(item: ItemDefinition): string {
   if (item.useContext === "both") parts.push("战斗内外都可用");
   if (item.useContext === "passive") parts.push("持有后自动触发");
 
-  if (item.ports.some((port) => port.requiresAdvantage || port.trigger === "advantage")) parts.push("需要优势窗口");
+  if (item.ports.some((port) => port.requiresAdvantage || port.trigger === "advantage")) parts.push("需要支付优势");
   if (item.ports.some((port) => port.requiresVision)) parts.push("需要视野");
 
   if (item.usage.mode === "rechargeable") {

@@ -73,6 +73,7 @@ const EFFECT_KEY_POWER: Record<string, number> = {
   "persuasion-payment": 2.6,
   "lure-step": 2.0,
   "advantage-next-melee-damage": 3.0,
+  "advantage-photon-cut": 5.8,
   "advantage-dodge-penalty": 3.1,
   "advantage-speed": 3.0,
   "advantage-incoming-reduce": 2.6,

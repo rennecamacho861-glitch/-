@@ -11,6 +11,7 @@ export type CombatItemEffectSpec = {
   trigger: ActiveEffectTrigger;
   targetActorId?: string;
   stackPolicy?: "max" | "add";
+  requiresAdvantage?: boolean;
 };
 
 type CombatItemEffectDefinition = Omit<CombatItemEffectSpec, "itemId" | "targetActorId"> & {
@@ -73,7 +74,7 @@ const PLAYER_COMBAT_EFFECTS: Partial<Record<ItemId, CombatItemEffectDefinition>>
     trigger: "nextMeleeHit",
     target: "self",
     requiresAdvantage: true,
-    blockedMessage: "冷凝钉需要在优势窗口使用。"
+    blockedMessage: "冷凝钉需要支付 1 点优势使用。"
   },
   "smoke-needle": {
     label: "烟针藏在闪避手里：下一次成功躲闪会让攻击者中毒。",
@@ -139,7 +140,7 @@ const PLAYER_COMBAT_EFFECTS: Partial<Record<ItemId, CombatItemEffectDefinition>>
     trigger: "nextFlee",
     target: "opponent",
     requiresAdvantage: true,
-    blockedMessage: "钩绳需要在优势窗口使用。"
+    blockedMessage: "钩绳需要支付 1 点优势使用。"
   },
   "acid-vial": {
     label: "腐蚀小瓶备好：下一次近战命中追加 1 点腐蚀伤害。",
@@ -157,7 +158,7 @@ const PLAYER_COMBAT_EFFECTS: Partial<Record<ItemId, CombatItemEffectDefinition>>
     trigger: "nextFlee",
     target: "self",
     requiresAdvantage: true,
-    blockedMessage: "烟雾球需要在优势窗口使用。"
+    blockedMessage: "烟雾球需要支付 1 点优势使用。"
   },
   painkiller: {
     label: "止痛片生效：2 回合内抵消一次重伤额外惩罚。",
@@ -191,7 +192,7 @@ const PLAYER_COMBAT_EFFECTS: Partial<Record<ItemId, CombatItemEffectDefinition>>
     trigger: "round",
     target: "self",
     requiresAdvantage: true,
-    blockedMessage: "夹板需要在优势窗口使用。"
+    blockedMessage: "夹板需要支付 1 点优势使用。"
   },
   "marked-coin": {
     label: "标记硬币压上桌：下一次说服值 +1。",
@@ -209,7 +210,7 @@ const PLAYER_COMBAT_EFFECTS: Partial<Record<ItemId, CombatItemEffectDefinition>>
     trigger: "round",
     target: "self",
     requiresAdvantage: true,
-    blockedMessage: "肋钩需要在优势窗口使用。"
+    blockedMessage: "肋钩需要支付 1 点优势使用。"
   },
   "ankle-line": {
     label: "绊踝线压低步点：目标下一动作回合躲闪 -20%。",
@@ -219,7 +220,7 @@ const PLAYER_COMBAT_EFFECTS: Partial<Record<ItemId, CombatItemEffectDefinition>>
     trigger: "round",
     target: "opponent",
     requiresAdvantage: true,
-    blockedMessage: "绊踝线需要在优势窗口使用。"
+    blockedMessage: "绊踝线需要支付 1 点优势使用。"
   },
   "chase-spur": {
     label: "追步刺逼进身位：下一动作回合速度 +1。",
@@ -229,7 +230,7 @@ const PLAYER_COMBAT_EFFECTS: Partial<Record<ItemId, CombatItemEffectDefinition>>
     trigger: "round",
     target: "self",
     requiresAdvantage: true,
-    blockedMessage: "追步刺需要在优势窗口使用。"
+    blockedMessage: "追步刺需要支付 1 点优势使用。"
   },
   "counter-plate": {
     label: "反压铁片抵住要害：下一次受到伤害 -1。",
@@ -239,7 +240,7 @@ const PLAYER_COMBAT_EFFECTS: Partial<Record<ItemId, CombatItemEffectDefinition>>
     trigger: "nextIncomingDamage",
     target: "self",
     requiresAdvantage: true,
-    blockedMessage: "反压铁片需要在优势窗口使用。"
+    blockedMessage: "反压铁片需要支付 1 点优势使用。"
   },
   "panic-nail": {
     label: "压胆钉封住退路：目标下一次逃跑 -15%。",
@@ -249,7 +250,7 @@ const PLAYER_COMBAT_EFFECTS: Partial<Record<ItemId, CombatItemEffectDefinition>>
     trigger: "nextFlee",
     target: "opponent",
     requiresAdvantage: true,
-    blockedMessage: "压胆钉需要在优势窗口使用。"
+    blockedMessage: "压胆钉需要支付 1 点优势使用。"
   },
   "focus-thread": {
     label: "定神线拉紧呼吸：下一动作回合躲闪 +15%。",
@@ -259,7 +260,7 @@ const PLAYER_COMBAT_EFFECTS: Partial<Record<ItemId, CombatItemEffectDefinition>>
     trigger: "round",
     target: "self",
     requiresAdvantage: true,
-    blockedMessage: "定神线需要在优势窗口使用。"
+    blockedMessage: "定神线需要支付 1 点优势使用。"
   }
 };
 
@@ -288,7 +289,7 @@ function resolveCombatItemEffect(
   const definition = table[itemId];
   if (!definition) return { type: "unsupported" };
   if (definition.requiresAdvantage && !hasRequiredAdvantage) {
-    return { type: "blocked", message: definition.blockedMessage ?? "该道具需要在优势窗口使用。" };
+    return { type: "blocked", message: definition.blockedMessage ?? "该道具需要支付 1 点优势使用。" };
   }
   return {
     type: "effect",
@@ -300,7 +301,8 @@ function resolveCombatItemEffect(
       remainingRounds: definition.remainingRounds,
       trigger: definition.trigger,
       targetActorId: definition.target === "opponent" ? opponentId : undefined,
-      stackPolicy: definition.stackPolicy
+      stackPolicy: definition.stackPolicy,
+      requiresAdvantage: definition.requiresAdvantage
     }
   };
 }

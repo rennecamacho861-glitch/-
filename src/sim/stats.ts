@@ -23,7 +23,8 @@ export function calculateDerivedStats(
     brightVisionRadius: Math.max(1, Math.floor(visionRadius / 2)),
     meleeDamage: 2 + Math.floor(stats.strength / 2) + weaponDamageBonus,
     heavyWoundThreshold: 4 + Math.floor(stats.constitution / 2),
-    basePersuasion: stats.intellect + confirmedIntelCount
+    basePersuasion: stats.intellect + confirmedIntelCount,
+    lootDropBonus: Math.max(0, stats.spirit - 3) * 2
   };
 }
 

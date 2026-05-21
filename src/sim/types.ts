@@ -20,6 +20,7 @@ export type DerivedStats = {
   meleeDamage: number;
   heavyWoundThreshold: number;
   basePersuasion: number;
+  lootDropBonus: number;
 };
 
 export type VisibilityLevel = "unseen" | "aware" | "visible";
@@ -54,6 +55,7 @@ export type UseContext = "field" | "combat" | "both" | "passive";
 
 export type ItemId =
   | "pistol"
+  | "photon-cut"
   | "bandage"
   | "long-knife"
   | "trap"
@@ -431,6 +433,8 @@ export type AdvantageState = {
   owner: AdvantageOwner;
   source: "vision" | "defend" | "dodge" | "heavyWound" | "trap" | "item" | "forced" | null;
   bonusAvailable: boolean;
+  playerPoints: number;
+  enemyPoints: number;
 };
 
 export type EncounterPhase = "chooseAction" | "advantageWindow";
@@ -503,14 +507,17 @@ export type EncounterState = {
     enemyToPlayer: VisibilityLevel;
   };
   advantage: AdvantageState;
+  visionLeadOwner?: AdvantageOwner;
   playerBonus?: {
     target: "speed" | "damage" | "dodge" | "intel";
     amount: number;
   };
+  playerBonusPool?: Partial<Record<"speed" | "damage" | "dodge" | "intel", number>>;
   enemyBonus?: {
     target: "speed" | "damage" | "dodge" | "intel";
     amount: number;
   };
+  enemyBonusPool?: Partial<Record<"speed" | "damage" | "dodge" | "intel", number>>;
   firstAttackUsed: Record<string, boolean>;
   combatItemUseRound: Record<string, number>;
   pressChoicesUsed: Record<string, boolean>;
@@ -573,7 +580,7 @@ export type GameState = {
   map: MapState;
   pendingPickupOffer?: {
     nodeId: string;
-    itemIds: [ItemId, ItemId, ItemId];
+    itemIds: ItemId[];
   };
   encounter?: EncounterState;
   playerHiddenUntilTurn?: number;

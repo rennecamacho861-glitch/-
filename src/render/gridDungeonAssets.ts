@@ -161,6 +161,7 @@ export type GridDungeonAssetId = (typeof GRID_DUNGEON_ASSETS)[number]["id"];
 
 const ITEM_ICON_ASSETS: Partial<Record<ItemId, GridDungeonAssetId>> = {
   pistol: "item-pistol",
+  "photon-cut": "item-long-knife",
   bandage: "item-bandage",
   "long-knife": "item-long-knife",
   trap: "item-trap",

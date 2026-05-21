@@ -83,6 +83,7 @@ export function collectEnemyDrops(state: GameState, enemy: ActorState, droppedEn
   if (candidates.length === 0) return [];
   const round = state.encounter?.round ?? 0;
   const maxDrops = 2 + (rollPercent(state.seed, `${enemy.id}-extra-drop`, state.turn, round) < 5 ? 1 : 0);
+  const playerDropBonus = calculateDerivedStats(state.player.stats).lootDropBonus;
   const drops: InventorySlot[] = [];
   const rareCandidates = candidates.filter((slot) => slot.item.rarity === "rare");
   const nonRareCandidates = candidates.filter((slot) => slot.item.rarity !== "rare");
@@ -96,12 +97,12 @@ export function collectEnemyDrops(state: GameState, enemy: ActorState, droppedEn
   for (const slot of nonRareCandidates) {
     if (drops.length >= maxDrops) break;
     if (slot === guaranteedNonRare) continue;
-    if (rollPercent(state.seed, `${enemy.id}-drop-${slot.item.id}`, state.turn, round) < 35) drops.push(cloneInventorySlot(slot));
+    if (rollPercent(state.seed, `${enemy.id}-drop-${slot.item.id}`, state.turn, round) < 35 + playerDropBonus) drops.push(cloneInventorySlot(slot));
   }
 
   for (const slot of rareCandidates) {
     if (drops.length >= maxDrops) break;
-    if (rollPercent(state.seed, `${enemy.id}-drop-rare-${slot.item.id}`, state.turn, round) < RARE_ITEM_DROP_CHANCE) {
+    if (rollPercent(state.seed, `${enemy.id}-drop-rare-${slot.item.id}`, state.turn, round) < RARE_ITEM_DROP_CHANCE + Math.floor(playerDropBonus / 2)) {
       drops.push(cloneInventorySlot(slot));
     }
   }

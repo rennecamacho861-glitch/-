@@ -31,6 +31,8 @@ function defaultEffects(definition: ItemDefinitionDraft): ItemDefinition["effect
   switch (definition.effectKey) {
     case "ranged-shot":
       return [{ kind: "rangedDamage", amount: 3, label: definition.effectKey }];
+    case "advantage-photon-cut":
+      return [{ kind: "rangedDamage", amount: 2, label: definition.effectKey }];
     case "heal-3":
       return [{ kind: "heal", amount: 3, label: definition.effectKey }];
     case "first-attack-and-throw":
@@ -245,16 +247,30 @@ function passiveGridItem(definition: {
 export const ITEMS: Record<ItemId, ItemDefinition> = {
   pistol: item({
     id: "pistol",
-    name: "手枪",
+    name: "左轮·卑劣的正义",
     useContext: "both",
     rarity: "rare",
     category: "damage",
     timing: "active",
-    maxCharges: 5,
+    maxCharges: 6,
     tags: ["ranged", "damage"],
     effectKey: "ranged-shot",
-    counterplay: "需要视野和清晰射线；防御减免，正确躲闪可避开，开枪会暴露方向。",
-    description: "橙色稀有远程武器，视野内 4 格射击，命中 3 伤害，默认 5 发；开火触发枪口火光和弹道演出。"
+    counterplay: "需要视野和清晰射线；防御不能减免左轮伤害，正确躲闪可避开，开枪会暴露方向。",
+    description: "橙色稀有远程武器，视野内 4 格射击，命中 3 伤害，默认 6 发；防御不能减免左轮伤害。"
+  }),
+  "photon-cut": item({
+    id: "photon-cut",
+    name: "长刀·光子切",
+    useContext: "combat",
+    rarity: "rare",
+    category: "damage",
+    timing: "active",
+    usage: { mode: "unlimited", manualLock: "per-round" },
+    ports: [{ id: "photon-cut-manual", kind: "manual", trigger: "advantage", context: "combat", requiresAdvantage: true, target: "enemy" }],
+    tags: ["melee", "damage"],
+    effectKey: "advantage-photon-cut",
+    counterplay: "不要让持有者囤到 3 点优势；用进攻、逃跑、说服或控制道具迫使其提前消耗优势。",
+    description: "支付优势释放光子切；1-2 优势时耗 1 点造成 2 伤害，3 优势以上耗尽优势造成优势 x3 伤害。"
   }),
   bandage: item({
     id: "bandage",
@@ -272,7 +288,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
   "long-knife": item({
     id: "long-knife",
     name: "长刀",
-    useContext: "combat",
+    useContext: "both",
     rarity: "rare",
     category: "damage",
     timing: "active",
@@ -347,7 +363,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
   "blade-oil": item({
     id: "blade-oil",
     name: "刀油",
-    useContext: "combat",
+    useContext: "both",
     rarity: "common",
     category: "damage",
     timing: "active",
@@ -359,7 +375,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
   "lime-powder": item({
     id: "lime-powder",
     name: "石灰粉",
-    useContext: "combat",
+    useContext: "both",
     rarity: "common",
     category: "damage",
     timing: "active",
@@ -371,7 +387,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
   "throwing-knife": item({
     id: "throwing-knife",
     name: "飞刀",
-    useContext: "combat",
+    useContext: "both",
     rarity: "uncommon",
     category: "damage",
     timing: "active",
@@ -427,7 +443,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     tags: ["mobility", "counter"],
     effectKey: "flee-penalty",
     counterplay: "成功躲闪可摆脱。",
-    description: "优势窗口使用，目标下次逃跑 -20%。"
+    description: "支付 1 点优势使用，目标下次逃跑 -20%。"
   }),
   "acid-vial": item({
     id: "acid-vial",
@@ -452,7 +468,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     tags: ["ammo"],
     effectKey: "pistol-ammo",
     counterplay: "无枪或满弹时不能启动；换弹花费 2 回合，期间若进入照面则失败。",
-    description: "无限使用的换弹工具；战斗外花费 2 回合，完成后给手枪 +2 发，最多补到 5 发。"
+    description: "无限使用的换弹工具；战斗外花费 2 回合，完成后给左轮 +2 发，最多补到 6 发。"
   }),
   "thick-cloth": item({
     id: "thick-cloth",
@@ -463,7 +479,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     timing: "passive",
     tags: ["survival"],
     effectKey: "first-melee-reduce",
-    counterplay: "对手枪和腐蚀无效。",
+    counterplay: "对左轮和腐蚀无效。",
     description: "每场照面首次近战伤害 -1。"
   }),
   bracer: item({
@@ -489,7 +505,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     tags: ["mobility", "vision"],
     effectKey: "smoke-flee",
     counterplay: "偏光片反制；持续很短。",
-    description: "优势窗口使用，逃跑 +20%，双方视野短暂下降。"
+    description: "支付 1 点优势使用，逃跑 +20%，双方视野短暂下降。"
   }),
   painkiller: item({
     id: "painkiller",
@@ -575,7 +591,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     tags: ["survival"],
     effectKey: "debuff-duration-reduce",
     counterplay: "不能防止生命归零。",
-    description: "优势窗口使用，使一次重伤 debuff 持续 -1。"
+    description: "支付 1 点优势使用，使一次重伤 debuff 持续 -1。"
   }),
   lens: item({
     id: "lens",
@@ -698,7 +714,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     durationTurns: 2,
     tags: ["melee", "damage"],
     effectKey: "advantage-next-melee-damage",
-    counterplay: "必须在优势窗口或优势修正后使用；防御仍会减免伤害，拖延一轮后失效。",
+    counterplay: "必须支付优势或拥有优势修正后使用；防御仍会减免伤害，拖延一轮后失效。",
     description: "优势后使用，下一动作回合近战伤害 +1。"
   }),
   "ankle-line": item({
@@ -711,7 +727,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     durationTurns: 2,
     tags: ["mobility", "counter"],
     effectKey: "advantage-dodge-penalty",
-    counterplay: "必须在优势窗口或优势修正后使用；防御不受影响，目标不躲闪即可规避收益。",
+    counterplay: "必须支付优势或拥有优势修正后使用；防御不受影响，目标不躲闪即可规避收益。",
     description: "优势后使用，目标下一动作回合躲闪 -20%。"
   }),
   "chase-spur": item({
@@ -724,7 +740,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     durationTurns: 2,
     tags: ["mobility", "damage"],
     effectKey: "advantage-speed",
-    counterplay: "必须在优势窗口或优势修正后使用；不叠加，防御和成功躲闪仍可反制。",
+    counterplay: "必须支付优势或拥有优势修正后使用；不叠加，防御和成功躲闪仍可反制。",
     description: "优势后使用，下一动作回合速度 +1。"
   }),
   "counter-plate": item({
@@ -736,7 +752,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     timing: "active",
     tags: ["survival", "counter"],
     effectKey: "advantage-incoming-reduce",
-    counterplay: "必须在优势窗口或优势修正后使用；只抵消一次小额伤害，不能阻止生命归零后的失败。",
+    counterplay: "必须支付优势或拥有优势修正后使用；只抵消一次小额伤害，不能阻止生命归零后的失败。",
     description: "优势后使用，下一次受到伤害 -1。"
   }),
   "panic-nail": item({
@@ -749,7 +765,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     durationTurns: 2,
     tags: ["mobility", "counter"],
     effectKey: "advantage-flee-penalty",
-    counterplay: "必须在优势窗口或优势修正后使用；目标不逃跑或成功躲闪拖开节奏即可浪费。",
+    counterplay: "必须支付优势或拥有优势修正后使用；目标不逃跑或成功躲闪拖开节奏即可浪费。",
     description: "优势后使用，目标下一次逃跑 -15%。"
   }),
   "focus-thread": item({
@@ -762,7 +778,7 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     durationTurns: 2,
     tags: ["mobility", "survival"],
     effectKey: "advantage-dodge-boost",
-    counterplay: "必须在优势窗口或优势修正后使用；仍需选对闪避方向，石灰粉等躲闪惩罚可抵消。",
+    counterplay: "必须支付优势或拥有优势修正后使用；仍需选对闪避方向，石灰粉等躲闪惩罚可抵消。",
     description: "优势后使用，下一动作回合躲闪 +15%。"
   }),
   "breath-cord": item({
@@ -847,8 +863,8 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     usage: { mode: "charges-destroy", maxUses: 1, manualLock: "per-round" },
     tags: ["melee", "counter"],
     effectKey: "next-hit-freeze",
-    counterplay: "需要优势窗口；必须命中近战，拖延或躲闪都会浪费。",
-    description: "优势窗口使用，下一次近战命中附加冻结 1 回合。"
+    counterplay: "需要支付优势；必须命中近战，拖延或躲闪都会浪费。",
+    description: "支付 1 点优势使用，下一次近战命中附加冻结 1 回合。"
   }),
   "antidote-tablet": item({
     id: "antidote-tablet",
@@ -1097,8 +1113,8 @@ export const ITEMS: Record<ItemId, ItemDefinition> = {
     tags: ["healing", "survival"],
     effectKey: "advantage-heal-3",
     ports: [{ id: "pressure-bandage-advantage", kind: "manual", trigger: "advantage", context: "combat", requiresAdvantage: true, target: "self" }],
-    counterplay: "必须先取得优势窗口；使用后关闭本次优势窗口，不能防止已经归零的伤害。",
-    description: "优势窗口使用，回复 3 点生命并回到继续战斗。"
+    counterplay: "必须支付优势；不能防止已经归零的伤害。",
+    description: "支付 1 点优势使用，回复 3 点生命并回到继续战斗。"
   }),
   "heat-pad": item({
     id: "heat-pad",
@@ -1428,6 +1444,7 @@ export const MYTHIC_ITEM_IDS = [...ENCHANTMENT_GEM_IDS];
 
 export const PICKUP_ITEM_POOL: ItemId[] = [
   "bandage",
+  "photon-cut",
   "trap",
   "glasses",
   "glow",

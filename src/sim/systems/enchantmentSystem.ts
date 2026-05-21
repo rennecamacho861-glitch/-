@@ -160,6 +160,7 @@ export const ENCHANTMENT_CARRIER_TEMPLATES: Partial<Record<ItemId, EnchantmentCa
   "data-spur": "SUPPORT",
   "long-knife": "HIT",
   "old-magazine": "AMMO",
+  "photon-cut": "HIT",
   pistol: "HIT"
 };
 

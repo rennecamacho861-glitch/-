@@ -33,7 +33,8 @@ export function moveAiUnits(state: GameState): void {
 export function chooseEnemyAction(state: GameState, enemy: ActorState, canUsePistol: (attacker: ActorState, target: ActorState) => boolean): CombatAction {
   const threshold = calculateDerivedStats(enemy.stats).heavyWoundThreshold;
   const lowHealth = enemy.hp <= threshold;
-  const hasAdvantage = state.encounter?.advantage.owner === "enemy";
+  const advantage = state.encounter?.advantage;
+  const hasAdvantage = (advantage?.enemyPoints ?? (advantage?.owner === "enemy" ? 1 : 0)) > 0;
   const canRanged = canUsePistol(enemy, state.player);
   const stateLabel = chooseCombatState(enemy, lowHealth, canRanged, hasAdvantage);
   const tacticalItem = chooseEnemyTacticalCombatItem(state, enemy);

@@ -56,7 +56,9 @@ function renderHud(): void {
   const encounterEnemy = encounter ? state.map.aiUnits.find((unit) => unit.id === encounter.enemyId) : undefined;
   const pickup = state.pendingPickupOffer;
   const isStarterPickup = pickup?.nodeId === "starter";
-  const hasPlayerAdvantage = encounter?.phase === "advantageWindow" && encounter.advantage.owner === "player";
+  const playerAdvantagePoints = encounter?.advantage.playerPoints ?? 0;
+  const enemyAdvantagePoints = encounter?.advantage.enemyPoints ?? 0;
+  const hasPlayerAdvantage = playerAdvantagePoints > 0;
   const manualRound = encounter?.round ?? state.turn;
   const playerMaxHp = calculateDerivedStats(state.player.stats).maxHp;
   const healthFeedback = healthFeedbackState(state.player.hp, playerMaxHp);
@@ -121,8 +123,8 @@ function renderHud(): void {
             <span class="eyebrow">照面</span>
             <h2>${encounter.enemyName}</h2>
           </div>
-          <strong class="${encounter.advantage.owner === "player" ? "good" : encounter.advantage.owner === "enemy" ? "bad" : ""}">
-            ${encounter.advantage.owner === "player" ? "我方优势" : encounter.advantage.owner === "enemy" ? "敌方优势" : "僵持"}
+          <strong class="${playerAdvantagePoints > 0 ? "good" : enemyAdvantagePoints > 0 ? "bad" : ""}">
+            ${playerAdvantagePoints > 0 ? `我方优势 ${playerAdvantagePoints}` : enemyAdvantagePoints > 0 ? `敌方优势 ${enemyAdvantagePoints}` : "僵持"}
           </strong>
         </div>
         <div class="read-row">
@@ -139,10 +141,10 @@ function renderHud(): void {
           <button data-action="dodge-right" ${encounter.phase !== "chooseAction" ? "disabled" : ""}>右闪 <small>方向预判</small></button>
         </div>
         <div class="secondary-actions">
-          <button data-special="flee" ${!hasPlayerAdvantage ? "disabled" : ""}>逃跑</button>
-          <button data-special="pressPower" ${!hasPlayerAdvantage ? "disabled" : ""}>续战·力量</button>
-          <button data-special="pressTempo" ${!hasPlayerAdvantage ? "disabled" : ""}>续战·节奏</button>
-          <button data-special="persuade" ${!hasPlayerAdvantage ? "disabled" : ""}>说服</button>
+          <button data-special="flee" ${!hasPlayerAdvantage ? "disabled" : ""} title="支付 1 点优势；成功率主要看你的速度、敌人速度、软底鞋和逃跑类道具修正。">逃跑 <small>-1 优势</small></button>
+          <button data-special="pressPower" ${!hasPlayerAdvantage ? "disabled" : ""} title="支付 1 点优势；下一次近战伤害 +1。重复选择会继续叠加。">续战·力量 <small>-1 优势</small></button>
+          <button data-special="pressTempo" ${!hasPlayerAdvantage ? "disabled" : ""} title="支付 1 点优势；下一次动作速度 +1。重复选择会继续叠加。">续战·节奏 <small>-1 优势</small></button>
+          <button data-special="persuade" ${!hasPlayerAdvantage ? "disabled" : ""} title="支付 1 点优势；成功率主要看智力、已确认情报、支付战利、说服道具和敌人当前伤势。">说服 <small>-1 优势</small></button>
         </div>
         <div class="intel-list">
           <h3>已知信息</h3>
@@ -367,6 +369,11 @@ function nextTutorialMessage(state: ReturnType<SimulationPort["snapshot"]>): Tut
       body: "你要在黑暗迷宫里捡道具、判断照面风险，并在被击倒前从出口撤离。WASD 或方向键每次移动一格，每走一步都会推进敌人行动。"
     },
     {
+      id: "attributes",
+      title: "五项属性",
+      body: "精神决定视野、初见情报和掉落修正；智力决定读信息和说服；力量决定伤害与同速先手；速度决定先后手、闪避和逃跑；体质决定生命、重伤阈值和异常持续。"
+    },
+    {
       id: "pickup",
       title: "道具是三选一构筑",
       body: "踩到道具节点会弹出三件候选，选一件加入背包，未选项会移除。拾取选择不额外花回合；背包里的道具说明可悬浮查看。"
@@ -382,6 +389,11 @@ function nextTutorialMessage(state: ReturnType<SimulationPort["snapshot"]>): Tut
       body: "右侧背包可点击主动道具；被动道具会在满足条件时自动生效。部分局外道具会花费回合，意味着敌人也会移动和拾取。"
     },
     {
+      id: "pistol",
+      title: "左轮：先脱战，再开火",
+      body: "左轮能在战斗外攻击视野内、直线射线可达的敌人。它不能被防御减免，适合先拉开距离、隔墙断线，再找枪线打掉追击者。"
+    },
+    {
       id: "enemy",
       title: "敌人也会成长",
       body: "敌人没有固定职业，会按随机属性、手上道具和迷宫拾取慢慢变强。听到红光、枪声或提示时，先判断是否该绕开。"
@@ -394,19 +406,21 @@ function nextTutorialMessage(state: ReturnType<SimulationPort["snapshot"]>): Tut
     {
       id: "advantage",
       title: "优势是出口，也是赌注",
-      body: "获得优势后可以逃跑、说服，或继续战斗。继续战斗会把优势换成下一动作回合的伤害或速度加成；再次获得优势可以再次压注。"
+      body: "优势会积累。逃跑、说服、续战和部分道具都要支付 1 点优势；优势越多，越能连续操作，长刀·光子切在 3 点以上会变成爆发。"
     }
   ];
 
   for (const message of messages) {
     if (shownTutorialIds.has(message.id)) continue;
     if (message.id === "goal") return message;
+    if (message.id === "attributes") return message;
     if (message.id === "pickup" && state.pendingPickupOffer) return message;
     if (message.id === "vision" && state.turn > 0 && !state.encounter && !state.pendingPickupOffer) return message;
     if (message.id === "items" && state.inventory.length > 0 && !state.encounter && !state.pendingPickupOffer) return message;
+    if (message.id === "pistol" && state.inventory.some((slot) => slot.item.id === "pistol") && !state.encounter) return message;
     if (message.id === "enemy" && (state.map.hints.length > 0 || state.encounter)) return message;
     if (message.id === "combat" && state.encounter) return message;
-    if (message.id === "advantage" && state.encounter?.phase === "advantageWindow" && state.encounter.advantage.owner === "player") return message;
+    if (message.id === "advantage" && (state.encounter?.advantage.playerPoints ?? 0) > 0) return message;
   }
   return undefined;
 }

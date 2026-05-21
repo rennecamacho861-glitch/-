@@ -273,7 +273,8 @@ function scoreLootNodeTarget(state: GameState, enemy: ActorState, node: LootNode
 function tacticalContext(state: GameState, enemy: ActorState): { lowHealth: boolean; hasAdvantageMomentum: boolean; estimatedPlayerSpeed: number } {
   return {
     lowHealth: enemy.hp <= 4 + Math.floor(enemy.stats.constitution / 2),
-    hasAdvantageMomentum: state.encounter?.advantage.owner === "enemy" || Boolean(state.encounter?.enemyBonus),
+    hasAdvantageMomentum:
+      (state.encounter?.advantage.enemyPoints ?? (state.encounter?.advantage.owner === "enemy" ? 1 : 0)) > 0 || Boolean(state.encounter?.enemyBonus),
     estimatedPlayerSpeed: estimatePlayerStatForEnemy(state, enemy, "speed")
   };
 }
@@ -356,7 +357,7 @@ function rangedReloadScore(enemy: ActorState, capabilities: ItemCapability[]): n
   const pistol = findSlot(enemy, "pistol");
   if (!pistol) return 0;
   const current = pistol.charges ?? 0;
-  const max = pistol.item.maxCharges ?? 5;
+  const max = pistol.item.maxCharges ?? 6;
   return current < max ? 10 : 0;
 }
 

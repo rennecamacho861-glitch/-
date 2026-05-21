@@ -59,7 +59,9 @@ import {
 import type {
   ActiveEffect,
   ActiveEffectStat,
+  AdvantageOwner,
   AdvantagePressChoice,
+  AdvantageState,
   ActorState,
   CombatAction,
   Direction,
@@ -82,7 +84,7 @@ const DEFENSE_HEAVY_WOUND_THRESHOLD_BONUS = 2;
 const SOFT_CLOSURE_START_ROUND = 3;
 const SIGNIFICANT_DAMAGE_THRESHOLD = 6;
 const PASSIVE_RULE_ITEM_IDS = new Set<ItemId>(PASSIVE_ITEM_RULES.map((rule) => rule.itemId));
-const DIRECT_ENCHANTMENT_ATTACK_ITEM_IDS = new Set<ItemId>(["pistol", "long-knife", "throwing-knife"]);
+const DIRECT_ENCHANTMENT_ATTACK_ITEM_IDS = new Set<ItemId>(["pistol", "photon-cut", "long-knife", "throwing-knife"]);
 
 type CombatSide = "player" | "enemy";
 
@@ -153,6 +155,7 @@ export class GameSimulation implements SimulationPort {
   private feedbackCounter = 0;
   private effectCounter = 0;
   private passiveAdvantageOwner: "player" | "enemy" | null = null;
+  private lastCombatItemSpentAdvantage = false;
   private ambushedEnemyIds = new Set<string>();
   private droppedEnemyIds = new Set<string>();
 
@@ -185,6 +188,66 @@ export class GameSimulation implements SimulationPort {
     this.state = this.createInitialState();
     this.updateVisibility();
     this.emit();
+  }
+
+  private emptyAdvantage(): AdvantageState {
+    return { owner: null, source: null, bonusAvailable: false, playerPoints: 0, enemyPoints: 0 };
+  }
+
+  private createAdvantage(owner: AdvantageOwner, source: AdvantageState["source"]): AdvantageState {
+    const advantage = this.emptyAdvantage();
+    if (owner === "player") advantage.playerPoints = 1;
+    if (owner === "enemy") advantage.enemyPoints = 1;
+    advantage.owner = owner;
+    advantage.source = owner ? source : null;
+    advantage.bonusAvailable = advantage.playerPoints + advantage.enemyPoints > 0;
+    return advantage;
+  }
+
+  private normalizeAdvantage(advantage: AdvantageState): AdvantageState {
+    const legacy = advantage as Partial<AdvantageState>;
+    if (legacy.playerPoints === undefined) legacy.playerPoints = legacy.owner === "player" ? 1 : 0;
+    if (legacy.enemyPoints === undefined) legacy.enemyPoints = legacy.owner === "enemy" ? 1 : 0;
+    legacy.bonusAvailable = (legacy.playerPoints ?? 0) + (legacy.enemyPoints ?? 0) > 0;
+    return advantage;
+  }
+
+  private advantagePoints(owner: Exclude<AdvantageOwner, null>): number {
+    const advantage = this.state.encounter?.advantage;
+    if (!advantage) return 0;
+    this.normalizeAdvantage(advantage);
+    return owner === "player" ? advantage.playerPoints : advantage.enemyPoints;
+  }
+
+  private gainAdvantage(owner: Exclude<AdvantageOwner, null>, source: AdvantageState["source"], amount = 1): void {
+    const advantage = this.state.encounter?.advantage;
+    if (!advantage || amount <= 0) return;
+    this.normalizeAdvantage(advantage);
+    if (owner === "player") advantage.playerPoints += amount;
+    else advantage.enemyPoints += amount;
+    advantage.owner = owner;
+    advantage.source = source;
+    advantage.bonusAvailable = true;
+  }
+
+  private spendAdvantage(owner: Exclude<AdvantageOwner, null>, amount = 1): boolean {
+    const advantage = this.state.encounter?.advantage;
+    if (!advantage || amount <= 0) return false;
+    this.normalizeAdvantage(advantage);
+    const key = owner === "player" ? "playerPoints" : "enemyPoints";
+    if (advantage[key] < amount) return false;
+    advantage[key] -= amount;
+    if (advantage.playerPoints + advantage.enemyPoints <= 0) {
+      advantage.owner = null;
+      advantage.source = null;
+      advantage.bonusAvailable = false;
+      return true;
+    }
+    if (advantage.owner === owner && advantage[key] <= 0) {
+      advantage.owner = advantage.playerPoints > 0 ? "player" : "enemy";
+    }
+    advantage.bonusAvailable = true;
+    return true;
   }
 
   /** Attempts to move the player by one grid delta and advances the run when legal. */
@@ -329,6 +392,10 @@ export class GameSimulation implements SimulationPort {
       const target = this.findVisibleEnemyInRange(4);
       if (target) used = this.usePistol(this.state.player, target, true);
       else this.pushLog("你没有看见能被手枪命中的目标。");
+    } else if ((itemId === "throwing-knife" || itemId === "long-knife") && !this.state.encounter) {
+      const target = this.findVisibleEnemyInRange(2);
+      if (target) used = this.throwKnife(this.state.player, target, itemId);
+      else this.pushLog("你没有看见能被投掷命中的目标。");
     } else if (this.state.encounter) {
       used = this.usePlayerCombatItem(slot);
     } else {
@@ -338,7 +405,11 @@ export class GameSimulation implements SimulationPort {
     if (used) {
       this.prepareEnchantmentFromUsedItem(this.state.player, slot);
       markManualSlotUsed(this.state, slot);
-      if (!wasInEncounter && !advancedTurn && (slot.item.useContext === "field" || slot.item.useContext === "both" || itemId === "pistol")) {
+      if (
+        !wasInEncounter &&
+        !advancedTurn &&
+        (slot.item.useContext === "field" || slot.item.useContext === "both" || itemId === "pistol" || itemId === "throwing-knife" || itemId === "long-knife")
+      ) {
         this.advanceTurnPreservingHints();
         advancedTurn = true;
         if (!this.state.outcome) this.checkEncounter();
@@ -361,11 +432,12 @@ export class GameSimulation implements SimulationPort {
   /** Attempts to spend a player-owned advantage window on escape. */
   tryFlee(): void {
     const encounter = this.state.encounter;
-    if (!encounter || encounter.phase !== "advantageWindow" || encounter.advantage.owner !== "player") {
-      this.pushLog("你还没有抓到能撤开的空隙。");
+    if (!encounter || this.advantagePoints("player") < 1) {
+      this.pushLog("逃跑需要支付 1 点优势。");
       this.emit();
       return;
     }
+    this.spendAdvantage("player");
 
     const enemy = this.getEncounterEnemy();
     const softBonus = this.consumePassiveFlag(this.state.player, "soft-shoes", "mobility") ? 10 : 0;
@@ -382,7 +454,6 @@ export class GameSimulation implements SimulationPort {
       this.moveActorAway(this.state.player, enemy.position);
       this.endEncounter("你抓住空隙拉开一格，脱离照面。");
     } else {
-      encounter.advantage = { owner: null, source: null, bonusAvailable: false };
       encounter.phase = "chooseAction";
       encounter.enemyBonus = { target: "speed", amount: 1 };
       this.pushLog("你想走，但对方已经封住退路。对方下一次进攻更快。");
@@ -393,16 +464,18 @@ export class GameSimulation implements SimulationPort {
   /** Converts a player-owned advantage window into a one-shot combat bonus. */
   continueFight(choice: AdvantagePressChoice = "pressTempo"): void {
     const encounter = this.state.encounter;
-    if (!encounter || encounter.phase !== "advantageWindow" || encounter.advantage.owner !== "player") return;
+    if (!encounter || this.advantagePoints("player") < 1) return;
     const bonusTarget = bonusTargetForPressChoice(choice);
-    encounter.playerBonus = { target: bonusTarget, amount: 1 };
-    encounter.advantage = { owner: null, source: null, bonusAvailable: false };
+    this.spendAdvantage("player");
+    const nextAmount = (encounter.playerBonusPool?.[bonusTarget] ?? 0) + 1;
+    encounter.playerBonusPool = { ...(encounter.playerBonusPool ?? {}), [bonusTarget]: nextAmount };
+    encounter.playerBonus = { target: bonusTarget, amount: nextAmount };
     encounter.phase = "chooseAction";
-    this.pushLog(`你放弃安全出口，把优势压到下一次${this.bonusLabel(bonusTarget)}。`);
+    this.pushLog(`你支付 1 点优势，把压注叠到下一次${this.bonusLabel(bonusTarget)}（+${encounter.playerBonus.amount}）。`);
     this.pushFeedback({
       kind: "advantage-press",
       title: "续战压注",
-      body: bonusTarget === "damage" ? "你把优势压进下一动作回合：近战伤害 +1。" : "你把优势压进下一动作回合：速度 +1。",
+      body: bonusTarget === "damage" ? `你把优势压进下一动作回合：近战伤害 +${encounter.playerBonus.amount}。` : `你把优势压进下一动作回合：速度 +${encounter.playerBonus.amount}。`,
       tone: "advantage",
       round: encounter.round,
       durationMs: 1000
@@ -413,11 +486,12 @@ export class GameSimulation implements SimulationPort {
   /** Attempts to spend a player-owned advantage window on persuasion. */
   tryPersuade(): void {
     const encounter = this.state.encounter;
-    if (!encounter || encounter.phase !== "advantageWindow" || encounter.advantage.owner !== "player") {
-      this.pushLog("没有优势时，对方不会认真听你开条件。");
+    if (!encounter || this.advantagePoints("player") < 1) {
+      this.pushLog("说服需要支付 1 点优势，让对方愿意听你的条件。");
       this.emit();
       return;
     }
+    this.spendAdvantage("player");
 
     const enemy = this.getEncounterEnemy();
     const knownCount = this.state.intel.filter((intel) => intel.targetId === enemy.id && intel.certainty === "confirmed").length;
@@ -457,7 +531,6 @@ export class GameSimulation implements SimulationPort {
       this.endEncounter("你把已知信息压上桌，对方收手让路。");
     } else {
       this.pushLog("话术没有生效，对方更确定你在虚张声势。");
-      encounter.advantage = { owner: null, source: null, bonusAvailable: false };
       encounter.phase = "chooseAction";
     }
     this.emit();
@@ -490,7 +563,7 @@ export class GameSimulation implements SimulationPort {
       inventory: player.inventory,
       intel: [],
       map,
-      pendingPickupOffer: { nodeId: "starter", itemIds: ["echo", "pistol", "bandage"] },
+      pendingPickupOffer: { nodeId: "starter", itemIds: ["echo", "pistol", "bandage", "photon-cut"] },
       feedbackEvents: [],
       log: ["你在牌桌般安静的迷宫里醒来。"]
     };
@@ -635,9 +708,10 @@ export class GameSimulation implements SimulationPort {
       enemyId: enemy.id,
       enemyName: enemy.name,
       round: 0,
-      phase: owner === "player" ? "advantageWindow" : "chooseAction",
+      phase: "chooseAction",
       visibility: { playerToEnemy, enemyToPlayer },
-      advantage: { owner, source: owner ? "vision" : null, bonusAvailable: Boolean(owner) },
+      advantage: this.createAdvantage(owner, owner ? "vision" : null),
+      visionLeadOwner: owner,
       firstAttackUsed: {},
       combatItemUseRound: {},
       pressChoicesUsed: {},
@@ -671,6 +745,7 @@ export class GameSimulation implements SimulationPort {
     encounter.round += 1;
     resetTriggerChain(this.state);
     this.passiveAdvantageOwner = null;
+    this.lastCombatItemSpentAdvantage = false;
     const roundLogStart = encounter.log.length;
     encounter.log.push({ round: encounter.round, text: `你选择${this.actionLabel(playerAction)}，${enemy.name}选择${this.actionLabel(enemyAction)}。` });
     this.applyRoundTimingPassives(this.state.player, enemy);
@@ -787,8 +862,10 @@ export class GameSimulation implements SimulationPort {
         advantageSource = "item";
       }
     } else if (!enemyFrozen && enemyAction.type === "useItem" && this.useEnemyCombatItem(enemy, enemyAction.itemId)) {
-      advantageOwner = "enemy";
-      advantageSource = "item";
+      if (!this.lastCombatItemSpentAdvantage) {
+        advantageOwner = "enemy";
+        advantageSource = "item";
+      }
     }
     if (this.state.outcome || !this.state.encounter) {
       this.pushCombatRoundFeedback(encounter, roundLogStart, "danger");
@@ -882,9 +959,13 @@ export class GameSimulation implements SimulationPort {
     }
 
     if (advantageOwner) {
-      encounter.advantage = { owner: advantageOwner, source: advantageSource, bonusAvailable: true };
-      encounter.phase = advantageOwner === "player" ? "advantageWindow" : "chooseAction";
-      this.pushLog(advantageOwner === "player" ? "你抓到了优势窗口。" : `${enemy.name}抢到优势。`);
+      this.gainAdvantage(advantageOwner, advantageSource);
+      encounter.phase = "chooseAction";
+      this.pushLog(
+        advantageOwner === "player"
+          ? `你抓到了 1 点优势（当前 ${encounter.advantage.playerPoints}）。`
+          : `${enemy.name}抢到 1 点优势（当前 ${encounter.advantage.enemyPoints}）。`
+      );
       this.pushCombatRoundFeedback(encounter, roundLogStart, this.feedbackToneForOwner(advantageOwner));
       if (advantageOwner === "enemy") this.applyEnemyAdvantage(enemy);
     } else {
@@ -1053,7 +1134,7 @@ export class GameSimulation implements SimulationPort {
     }
 
     const rawDamage = 3;
-    let damage = options.defenderDefending ? Math.ceil(rawDamage * DEFENSE_DAMAGE_TAKEN_RATE) : rawDamage;
+    let damage = rawDamage;
     const notes: string[] = [];
     let defenseTriggeredEffect = false;
     const shieldReduction = this.consumeIncomingDamageReduction(defender, true);
@@ -1080,15 +1161,14 @@ export class GameSimulation implements SimulationPort {
         : { bonusDamage: 0, immediateDamage: 0 };
     damage += enchantmentResult.bonusDamage;
     defender.hp = Math.max(0, defender.hp - damage);
-    if (damage > 0 && options.defenderDefending) this.triggerDefendedHitItemSynergies(attacker, defender, notes);
     const baseThreshold = calculateDerivedStats(defender.stats).heavyWoundThreshold;
     const totalDamage = damage + enchantmentResult.immediateDamage;
     this.pushGunshotFeedback(attacker, defender, totalDamage, false);
-    const heavyWound = totalDamage >= baseThreshold + (options.defenderDefending ? DEFENSE_HEAVY_WOUND_THRESHOLD_BONUS : 0);
+    const heavyWound = totalDamage >= baseThreshold;
     const defense: DefenseOutcome | undefined = options.defenderDefending
       ? {
           reducedDamage: Math.max(0, rawDamage - damage),
-          preventedHeavyWound: rawDamage + enchantmentResult.immediateDamage >= baseThreshold && !heavyWound,
+          preventedHeavyWound: false,
           triggeredEffect: defenseTriggeredEffect,
           effective: false
         }
@@ -1098,7 +1178,7 @@ export class GameSimulation implements SimulationPort {
     }
     this.triggerEmergencySyringe(defender, notes);
     return {
-      text: `${attacker.name}远程命中，造成 ${totalDamage} 点伤害${options.defenderDefending ? "（防御减免）" : ""}${notes.length ? `（${notes.join("，")}）` : ""}。`,
+      text: `${attacker.name}远程命中，造成 ${totalDamage} 点伤害${notes.length ? `（${notes.join("，")}）` : ""}。`,
       dodged: false,
       heavyWound,
       resolved: true,
@@ -1351,7 +1431,7 @@ export class GameSimulation implements SimulationPort {
     let speed = actor.stats.speed + speedEffects + this.consumeBonus(actor, "speed");
     const encounter = this.state.encounter;
     if (encounter && !encounter.firstAttackUsed[actor.id]) {
-      if (encounter.advantage.owner === actor.faction && encounter.advantage.source === "vision") speed += 2;
+      if (encounter.visionLeadOwner === actor.faction) speed += 2;
       if (this.hasItem(actor, "long-knife")) speed += 2;
       encounter.firstAttackUsed[actor.id] = true;
     }
@@ -1370,6 +1450,14 @@ export class GameSimulation implements SimulationPort {
     const encounter = this.state.encounter;
     if (!encounter) return 0;
     const key = actor.faction === "player" ? "playerBonus" : "enemyBonus";
+    const poolKey = actor.faction === "player" ? "playerBonusPool" : "enemyBonusPool";
+    const pool = encounter[poolKey];
+    const pooledAmount = pool?.[target] ?? 0;
+    if (pooledAmount > 0) {
+      delete pool?.[target];
+      if (encounter[key]?.target === target) encounter[key] = undefined;
+      return pooledAmount;
+    }
     const bonus = encounter[key];
     if (bonus?.target !== target) return 0;
     encounter[key] = undefined;
@@ -1414,6 +1502,8 @@ export class GameSimulation implements SimulationPort {
   private applyEnemyAdvantage(enemy: ActorState): void {
     const encounter = this.state.encounter;
     if (!encounter) return;
+    if (this.advantagePoints("enemy") < 1) return;
+    this.spendAdvantage("enemy");
     if (enemy.hp <= calculateDerivedStats(enemy.stats).heavyWoundThreshold && this.rollPercent("enemy-flee") < 65) {
       this.moveActorAway(enemy, this.state.player.position);
       this.pushFeedback({
@@ -1427,7 +1517,6 @@ export class GameSimulation implements SimulationPort {
       return;
     }
     encounter.enemyBonus = { target: "speed", amount: 1 };
-    encounter.advantage = { owner: null, source: null, bonusAvailable: false };
     encounter.phase = "chooseAction";
     this.pushLog(`${enemy.name}把优势压成下一次速度。`);
   }
@@ -1436,11 +1525,11 @@ export class GameSimulation implements SimulationPort {
     const encounter = this.state.encounter;
     if (!encounter) return;
     if (this.state.player.hp > enemy.hp) {
-      encounter.advantage = { owner: "player", source: "forced", bonusAvailable: true };
-      encounter.phase = "advantageWindow";
+      this.gainAdvantage("player", "forced");
+      encounter.phase = "chooseAction";
       this.pushLog("僵持到第四轮，你凭剩余状态拿到最后窗口。");
     } else if (enemy.hp > this.state.player.hp || enemy.stats.speed > this.state.player.stats.speed) {
-      encounter.advantage = { owner: "enemy", source: "forced", bonusAvailable: true };
+      this.gainAdvantage("enemy", "forced");
       this.applyEnemyAdvantage(enemy);
     } else {
       this.moveActorAway(this.state.player, enemy.position);
@@ -1478,8 +1567,8 @@ export class GameSimulation implements SimulationPort {
     this.pushGunshotFeedback(attacker, target, totalDamage, false);
     this.pushLog(`${attacker.name}开火造成 ${totalDamage} 点伤害${notes.length ? `（${notes.join("，")}）` : ""}。`);
     if (this.state.encounter && fromPlayer) {
-      this.state.encounter.advantage = { owner: "player", source: "item", bonusAvailable: true };
-      this.state.encounter.phase = "advantageWindow";
+      this.gainAdvantage("player", "item");
+      this.state.encounter.phase = "chooseAction";
     }
     if (target.hp <= 0) {
       if (target.faction === "enemy") {
@@ -1523,7 +1612,7 @@ export class GameSimulation implements SimulationPort {
   }
 
   private throwKnife(attacker: ActorState, target: ActorState, itemId: ItemId): boolean {
-    if (distance(attacker.position, target.position) > 2 || this.getVisibility(attacker, target) !== "visible") {
+    if (distance(attacker.position, target.position) > 2 || this.getVisibility(attacker, target) !== "visible" || !this.hasLineOfSight(attacker.position, target.position)) {
       this.pushLog(`距离或视野不够，${ITEMS[itemId].name}不能掷出。`);
       return false;
     }
@@ -1550,9 +1639,44 @@ export class GameSimulation implements SimulationPort {
       return true;
     }
     if (this.state.encounter) {
-      this.state.encounter.advantage = { owner: attacker.faction, source: "item", bonusAvailable: true };
-      this.state.encounter.phase = attacker.faction === "player" ? "advantageWindow" : "chooseAction";
+      this.gainAdvantage(attacker.faction, "item");
+      this.state.encounter.phase = "chooseAction";
     }
+    return true;
+  }
+
+  private usePhotonCut(attacker: ActorState, target: ActorState): boolean {
+    const points = this.advantagePoints(attacker.faction);
+    if (points < 1) {
+      if (attacker.faction === "player") this.pushLog("长刀·光子切需要至少 1 点优势。");
+      return false;
+    }
+    const slot = this.findSlot(attacker, "photon-cut");
+    if (!slot) return false;
+    const spent = points >= 3 ? points : 1;
+    if (!this.spendAdvantage(attacker.faction, spent)) return false;
+    this.lastCombatItemSpentAdvantage = true;
+    let damage = spent >= 3 ? spent * 3 : 2;
+    const notes: string[] = [];
+    const enchantmentResult = this.applyEnchantmentPayload(attacker, target, damage, notes, this.consumeEnchantmentSources(attacker, slot));
+    damage += enchantmentResult.bonusDamage;
+    target.hp = Math.max(0, target.hp - damage);
+    const totalDamage = damage + enchantmentResult.immediateDamage;
+    this.triggerDamageEvents(attacker, target, totalDamage, totalDamage >= calculateDerivedStats(target.stats).heavyWoundThreshold);
+    this.pushLog(`${attacker.name}释放${ITEMS["photon-cut"].name}，消耗 ${spent} 点优势，造成 ${totalDamage} 点伤害${notes.length ? `（${notes.join("，")}）` : ""}。`);
+    if (target.hp <= 0 && target.faction === "enemy") {
+      target.defeated = true;
+      this.state.loot += 2;
+      this.pushEnemyDefeatedFeedback(target);
+      this.collectEnemyDrops(target);
+      this.endEncounter(`${target.name}被光子切击倒。`);
+      return true;
+    }
+    if (target.hp <= 0 && target.faction === "player") {
+      this.failRun("被迫离桌", "光子刃切断了最后一次机会。");
+      return true;
+    }
+    if (this.state.encounter) this.state.encounter.phase = "chooseAction";
     return true;
   }
 
@@ -1567,7 +1691,7 @@ export class GameSimulation implements SimulationPort {
       return false;
     }
     const magazine = this.findSlot(actor, "old-magazine");
-    const maxCharges = ITEMS.pistol.maxCharges ?? 5;
+    const maxCharges = ITEMS.pistol.maxCharges ?? 6;
     const beforeCharges = pistol.charges ?? 0;
     if (beforeCharges >= maxCharges) {
       if (actor.faction === "player") this.pushLog("手枪已经满弹，旧弹夹暂时不用打开。");
@@ -1643,6 +1767,7 @@ export class GameSimulation implements SimulationPort {
     let used = false;
 
     if (itemId === "pistol") used = this.usePistol(this.state.player, enemy, true);
+    else if (itemId === "photon-cut") used = this.usePhotonCut(this.state.player, enemy);
     else if (itemId === "long-knife" || itemId === "throwing-knife") used = this.throwKnife(this.state.player, enemy, itemId);
     else if (itemId === "coagulation-powder") used = this.useCoagulationPowder();
     else if (itemId === "stitch-kit") used = this.useStitchKit(this.state.player);
@@ -1679,6 +1804,14 @@ export class GameSimulation implements SimulationPort {
       }
       return used;
     }
+    if (itemId === "photon-cut") {
+      const used = this.usePhotonCut(enemy, this.state.player);
+      if (used) {
+        markManualSlotUsed(this.state, slot);
+        this.markCombatItemUse(enemy);
+      }
+      return used;
+    }
     const resolution = resolveEnemyCombatItemEffect(itemId, this.state.player.id, this.enemyHasAdvantageMomentum(enemy));
     if (resolution.type !== "effect") return false;
     const used = this.consumeResolvedEffect(enemy, resolution.effect);
@@ -1693,7 +1826,7 @@ export class GameSimulation implements SimulationPort {
   private enemyHasAdvantageMomentum(enemy: ActorState): boolean {
     const encounter = this.state.encounter;
     if (!encounter || encounter.enemyId !== enemy.id) return false;
-    return encounter.advantage.owner === "enemy" || Boolean(encounter.enemyBonus);
+    return this.advantagePoints("enemy") > 0 || Boolean(encounter.enemyBonus);
   }
 
   private consumeForEffect(
@@ -1713,6 +1846,13 @@ export class GameSimulation implements SimulationPort {
   }
 
   private consumeResolvedEffect(actor: ActorState, effect: CombatItemEffectSpec): boolean {
+    if (effect.requiresAdvantage) {
+      if (!this.spendAdvantage(actor.faction)) {
+        if (actor.faction === "player") this.pushLog(`${ITEMS[effect.itemId].name}需要支付 1 点优势。`);
+        return false;
+      }
+      this.lastCombatItemSpentAdvantage = true;
+    }
     if (effect.itemId === "smoke-ball" && actor.faction === "enemy" && this.consumePassiveFlag(this.state.player, "polarized-lens", "smoke")) {
       this.pushEffectLog("偏光片生效：你免疫了这次烟雾造成的视野惩罚。");
     }
@@ -1747,7 +1887,11 @@ export class GameSimulation implements SimulationPort {
       return false;
     }
     if (rule.requiresAdvantage && inCombat && !this.actorHasAdvantageForHealing(actor)) {
-      if (actor.faction === "player") this.pushLog(`${ITEMS[itemId].name}需要先取得优势窗口。`);
+      if (actor.faction === "player") this.pushLog(`${ITEMS[itemId].name}需要支付 1 点优势。`);
+      return false;
+    }
+    if (rule.consumesAdvantage && inCombat && !this.spendAdvantage(actor.faction)) {
+      if (actor.faction === "player") this.pushLog(`${ITEMS[itemId].name}需要支付 1 点优势。`);
       return false;
     }
 
@@ -1767,10 +1911,7 @@ export class GameSimulation implements SimulationPort {
     if (canAddHealOnHit) {
       this.addActiveEffect(actor, itemId, `${ITEMS[itemId].name}吸住掌心：下一次近战命中回复 ${rule.healOnMeleeHit} 点生命。`, "healOnMeleeHit", rule.healOnMeleeHit ?? 1, 2, "nextMeleeHit");
     }
-    if (rule.consumesAdvantage && this.state.encounter) {
-      this.state.encounter.advantage = { owner: null, source: null, bonusAvailable: false };
-      this.state.encounter.phase = "chooseAction";
-    }
+    if (rule.consumesAdvantage && this.state.encounter) this.state.encounter.phase = "chooseAction";
     this.pushEffectLog(`${actor.name}使用${ITEMS[itemId].name}${healed > 0 ? `，回复 ${healed} 点生命` : ""}${cleared > 0 ? `，清除 ${cleared} 个状态` : ""}。`);
     if (actor.faction === "player" && itemId === "bandage") {
       this.pushFeedback({
@@ -1789,8 +1930,7 @@ export class GameSimulation implements SimulationPort {
   private actorHasAdvantageForHealing(actor: ActorState): boolean {
     const encounter = this.state.encounter;
     if (!encounter) return false;
-    if (actor.faction === "player") return encounter.phase === "advantageWindow" && encounter.advantage.owner === "player";
-    return encounter.advantage.owner === "enemy" || Boolean(encounter.enemyBonus);
+    return this.advantagePoints(actor.faction) > 0;
   }
 
   private healActor(actor: ActorState, amount: number): number {
@@ -1904,8 +2044,7 @@ export class GameSimulation implements SimulationPort {
   }
 
   private hasPlayerAdvantageWindow(): boolean {
-    const encounter = this.state.encounter;
-    return Boolean(encounter?.phase === "advantageWindow" && encounter.advantage.owner === "player");
+    return this.advantagePoints("player") > 0;
   }
 
   private triggerDamageEvents(attacker: ActorState, defender: ActorState, damage: number, heavyWound: boolean): void {
@@ -2277,16 +2416,16 @@ export class GameSimulation implements SimulationPort {
 
   private useBandage(slot: InventorySlot): boolean {
     const inCombat = Boolean(this.state.encounter);
-    const hasAdvantage = this.state.encounter?.phase === "advantageWindow" && this.state.encounter.advantage.owner === "player";
+    const hasAdvantage = this.advantagePoints("player") > 0;
     if (inCombat && !hasAdvantage) {
-      this.pushLog("战斗中必须先拿到优势窗口，才能稳住手包扎。");
+      this.pushLog("战斗中必须支付 1 点优势，才能稳住手包扎。");
       return false;
     }
     const maxHp = calculateDerivedStats(this.state.player.stats).maxHp;
     this.state.player.hp = Math.min(maxHp, this.state.player.hp + 3);
     this.spendItemUse(this.state.player, slot.item.id);
     if (this.state.encounter) {
-      this.state.encounter.advantage = { owner: null, source: null, bonusAvailable: false };
+      this.spendAdvantage("player");
       this.state.encounter.phase = "chooseAction";
     }
     this.pushLog("你用绷带压住伤口，回复 3 点生命。");
@@ -2411,6 +2550,10 @@ export class GameSimulation implements SimulationPort {
     if (!this.state.intel.some((intel) => intel.targetId === enemy.id && intel.certainty === "suspected" && intel.source === "sight")) {
       this.revealSuspectedIntel(enemy, "sight");
     }
+    const spirit = this.state.player.stats.spirit;
+    const guaranteedSightIntel = spirit >= 6 ? 2 : spirit >= 5 ? 1 : 0;
+    const confirmedSightIntel = this.state.intel.filter((intel) => intel.targetId === enemy.id && intel.certainty === "confirmed" && intel.source === "sight").length;
+    for (let i = confirmedSightIntel; i < guaranteedSightIntel; i += 1) this.revealNextIntel(enemy, "sight");
   }
 
   private revealNextIntel(enemy: ActorState, source: IntelEntry["source"]): void {
