@@ -1,5 +1,5 @@
 import { ALL_ITEM_IDS, ITEMS, createInventorySlot } from "./items";
-import { itemUiDescription } from "./itemText";
+import { itemEnchantmentUiText, itemUiDescription } from "./itemText";
 import { directionFromDelta, directionLabel, distance, isSamePosition, createMap } from "./map";
 import type { SimulationListener, SimulationPort, Unsubscribe } from "./ports";
 import { calculateDerivedStats, clampPercent, DEFAULT_PLAYER_STATS, STAT_KEYS } from "./stats";
@@ -334,7 +334,8 @@ export class GameSimulation implements SimulationPort {
     if (itemId && offer.itemIds.includes(itemId)) {
       const slot = this.addItemToActor(this.state.player, itemId);
       if (!isStarterOffer) this.state.loot += lootValueForItem(ITEMS[itemId]);
-      this.pushLog(`你选择 ${enchantedItemName(slot)}。${itemUiDescription(itemId)}`);
+      const enchantmentText = itemEnchantmentUiText(slot);
+      this.pushLog(`你选择 ${enchantedItemName(slot)}。${itemUiDescription(itemId)}${enchantmentText ? ` ${enchantmentText}` : ""}`);
     } else {
       this.pushLog("你放弃了这处道具节点。");
     }
@@ -927,11 +928,22 @@ export class GameSimulation implements SimulationPort {
     let significantDamage: { owner: CombatSide; amount: number } | null = null;
     const effectiveDefenseActors = new Set<string>();
     const defensiveReadActors = new Set<string>();
+    const defenseNoAdvantageActors = new Set<string>();
 
     const recordAttackResult = (attacker: ActorState, defender: ActorState, result: CombatHitResult): void => {
       if (result.defense && defender.faction === "player" && attacker.faction === "enemy" && !defensiveReadActors.has(defender.id)) {
         defensiveReadActors.add(defender.id);
         this.gainIntel(attacker, 2, "defend");
+      }
+      if (
+        result.defense &&
+        !result.defense.effective &&
+        defender.faction === "player" &&
+        attacker.faction === "enemy" &&
+        !defenseNoAdvantageActors.has(defender.id)
+      ) {
+        defenseNoAdvantageActors.add(defender.id);
+        this.pushDefenseNoAdvantageFeedback(attacker, result.defense, result.heavyWound);
       }
       if (result.dodged) {
         successfulDodgeOwner = defender.faction;
@@ -1057,7 +1069,7 @@ export class GameSimulation implements SimulationPort {
       } else {
         recordAttackResult(attack.actor, attack.target, result);
       }
-      if (result.heavyWound) {
+      if (result.heavyWound && !result.defense?.effective) {
         advantageOwner = attack.actor.faction;
         advantageSource = "heavyWound";
         if (attack.target.faction === "enemy" && attack.target.hp <= 0) attack.target.defeated = true;
@@ -1145,12 +1157,13 @@ export class GameSimulation implements SimulationPort {
       const chance = correct
         ? clampPercent(75 + speedDiff * 8 + softShoes + itemModifier, 55, 95)
         : clampPercent(10 + speedDiff * 3 + softShoes + itemModifier, 5, 30);
+      const roll = this.rollPercent(`${attacker.id}-attack-${this.state.turn}`);
       const tutorialGuaranteedDodge =
         this.state.tutorialScenario?.active &&
         defender.faction === "player" &&
         attacker.id === TUTORIAL_ENEMY_ONE_ID &&
         correct;
-      if (tutorialGuaranteedDodge || this.rollPercent(`${attacker.id}-attack-${this.state.turn}`) <= chance) {
+      if (tutorialGuaranteedDodge || roll <= chance) {
         if (defender.faction === "player" && attacker.faction === "enemy") this.gainIntel(attacker, 1, "dodge");
         const wasted = this.discardNextMeleeHitEffects(attacker);
         const dodgeEffectText = this.resolveSuccessfulDodgeItemEffects(defender, attacker);
@@ -1162,6 +1175,9 @@ export class GameSimulation implements SimulationPort {
           heavyWound: false,
           damage: 0
         };
+      }
+      if (correct && defender.faction === "player" && attacker.faction === "enemy") {
+        this.pushCorrectDodgeFailedFeedback(options.defenderDodge, chance, roll);
       }
     }
 
@@ -1245,7 +1261,7 @@ export class GameSimulation implements SimulationPort {
         }
       : undefined;
     if (defense) {
-      defense.effective = !heavyWound && (defense.reducedDamage >= 2 || defense.preventedHeavyWound || defense.triggeredEffect);
+      defense.effective = true;
     }
     if (heavyWound && defender.faction === "player") {
       const prevention = Math.abs(this.consumeEffectAmount(defender, "heavyPenalty", "owned", "round"));
@@ -1285,11 +1301,15 @@ export class GameSimulation implements SimulationPort {
       const chance = correct
         ? clampPercent(75 + speedDiff * 8 + softShoes + itemModifier, 55, 95)
         : clampPercent(10 + speedDiff * 3 + softShoes + itemModifier, 5, 30);
-      if (this.rollPercent(`${attacker.id}-ranged-${this.state.turn}`) <= chance) {
+      const roll = this.rollPercent(`${attacker.id}-ranged-${this.state.turn}`);
+      if (roll <= chance) {
         this.pushGunshotFeedback(attacker, defender, 0, true);
         if (defender.faction === "player") this.gainIntel(attacker, 1, "dodge");
         this.applyPassiveRules("onDodgeSuccess", defender, attacker);
         return { text: `${defender.name}向${options.defenderDodge === "left" ? "左" : "右"}闪开，避过了枪线。`, dodged: true, heavyWound: false, resolved: true, damage: 0 };
+      }
+      if (correct && defender.faction === "player" && attacker.faction === "enemy") {
+        this.pushCorrectDodgeFailedFeedback(options.defenderDodge, chance, roll, true);
       }
     }
 
@@ -1334,7 +1354,9 @@ export class GameSimulation implements SimulationPort {
         }
       : undefined;
     if (defense) {
-      defense.effective = !heavyWound && (defense.reducedDamage >= 2 || defense.preventedHeavyWound || defense.triggeredEffect);
+      defense.effective =
+        !heavyWound &&
+        (defense.reducedDamage > 0 || defense.preventedHeavyWound || defense.triggeredEffect);
     }
     this.triggerEmergencySyringe(defender, notes);
     return {
@@ -1858,6 +1880,31 @@ export class GameSimulation implements SimulationPort {
     if (awardedActors.has(defender.id)) return;
     awardedActors.add(defender.id);
     this.applyPassiveRules("onDefendSuccess", defender, attacker);
+  }
+
+  private pushDefenseNoAdvantageFeedback(attacker: ActorState, defense: DefenseOutcome, heavyWound: boolean): void {
+    const reason = heavyWound
+      ? `${attacker.name}这次不是可被普通防御稳定克制的基础近战，且伤害仍形成重伤。`
+      : defense.reducedDamage <= 0
+        ? `${attacker.name}这次不是可被普通防御稳定克制的基础近战；左轮枪线或特殊伤害需要墙体、正确闪避或盾类道具处理。`
+        : `${attacker.name}这次属于远程或特殊压制，普通防御只提供减伤，不保证优势。`;
+    this.pushFeedback({
+      kind: "tutorial",
+      title: "防御没有形成优势",
+      body: `${reason} 基础近战打进防御时会稳定给你优势。`,
+      tone: "intel",
+      durationMs: 1800
+    });
+  }
+
+  private pushCorrectDodgeFailedFeedback(direction: "left" | "right", chance: number, roll: number, ranged = false): void {
+    this.pushFeedback({
+      kind: "tutorial",
+      title: "读向正确，但闪避未过",
+      body: `你选对了${direction === "left" ? "左" : "右"}闪，本次${ranged ? "枪线" : "攻击"}闪避率为 ${chance}%，判定值 ${roll} 未通过。速度差、道具修正和负面状态仍会影响结果。`,
+      tone: "intel",
+      durationMs: 2000
+    });
   }
 
   private softClosureOwner(

@@ -5,8 +5,8 @@ import path from "node:path";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { ALL_ITEM_IDS } = require("../../.test-build/src/sim/items.js");
-const { activeEffectUiText, itemEnemyCounter, itemUiDescription, itemUiLimit, itemUiText, statusEffectUiText } = require("../../.test-build/src/sim/itemText.js");
+const { ALL_ITEM_IDS, createInventorySlot } = require("../../.test-build/src/sim/items.js");
+const { activeEffectUiText, itemEnchantmentUiText, itemEnemyCounter, itemUiDescription, itemUiLimit, itemUiText, statusEffectUiText } = require("../../.test-build/src/sim/itemText.js");
 
 const BANNED_UI_TEXT = ["橙色稀有", "FeedbackEvent", "effectKey", "useContext", "ports", "trigger", "DOM", "Phaser", "生效时显示", "触发枪口", "弹道演出"];
 
@@ -91,6 +91,34 @@ test("HUD and pickup log read item UI descriptions through the presentation port
   assert.ok(mainSource.includes("activeEffectUiText(effect"));
   assert.ok(mainSource.includes("statusEffectUiText(effect"));
   assert.equal(mainSource.includes("item.counterplay"), false);
-  assert.ok(simulationSource.includes('import { itemUiDescription } from "./itemText";'));
+  assert.ok(simulationSource.includes('from "./itemText";'));
   assert.ok(simulationSource.includes("itemUiDescription(itemId)"));
+});
+
+test("enchanted item descriptions expose affix effects at the presentation port", () => {
+  const pistol = createInventorySlot("pistol", 1, {
+    affix: { kind: "enchantment", enchantment: "burning", source: "natural" }
+  });
+  const bandage = createInventorySlot("bandage", 1, {
+    affix: { kind: "enchantment", enchantment: "radiant", source: "gem", locked: true }
+  });
+
+  assert.equal(
+    itemEnchantmentUiText(pistol),
+    "燃烧的附魔：该道具直接命中并造成伤害时，额外施加 1-3 层灼烧。"
+  );
+  assert.equal(
+    itemEnchantmentUiText(bandage),
+    "闪耀的附魔：原效果成功后刷新 1 次附魔预备；下一次有效命中额外结算 1 次基础效果，不复制附魔本身。"
+  );
+});
+
+test("HUD exposes enchantment text and visual data attributes", () => {
+  const mainSource = fs.readFileSync(path.join(process.cwd(), "src", "main.ts"), "utf8");
+  const styleSource = fs.readFileSync(path.join(process.cwd(), "src", "styles.css"), "utf8");
+
+  assert.ok(mainSource.includes("itemEnchantmentUiText(slot)"));
+  assert.ok(mainSource.includes("data-enchantment"));
+  assert.ok(styleSource.includes(".tool-button[data-enchantment]"));
+  assert.ok(styleSource.includes(".tool-enchantment"));
 });

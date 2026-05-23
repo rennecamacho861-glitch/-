@@ -1,5 +1,16 @@
 import { ITEMS } from "./items";
-import type { ActiveEffect, ActiveEffectStat, ItemDefinition, ItemId, StatusEffect, StatusEffectType } from "./types";
+import { carrierTemplateForItem, enchantmentAdjective } from "./systems/enchantmentSystem";
+import type { EnchantmentCarrierTemplate } from "./systems/enchantmentSystem";
+import type {
+  ActiveEffect,
+  ActiveEffectStat,
+  EnchantmentKind,
+  InventorySlot,
+  ItemDefinition,
+  ItemId,
+  StatusEffect,
+  StatusEffectType
+} from "./types";
 
 export type ItemUiText = {
   uiShort: string;
@@ -121,6 +132,15 @@ export function itemEnemyCounter(itemId: ItemId): string {
   return itemUiText(itemId).uiEnemyCounter;
 }
 
+/** Returns the player-facing affix explanation for an enchanted item instance. */
+export function itemEnchantmentUiText(slot: Pick<InventorySlot, "item" | "affix">): string {
+  if (slot.affix?.kind !== "enchantment") return "";
+  const template = carrierTemplateForItem(slot.item.id) ?? "SUPPORT";
+  const effect = enchantmentEffectText(slot.affix.enchantment);
+  const templateText = enchantmentTemplateText(template, effect);
+  return `${enchantmentAdjective(slot.affix.enchantment)}附魔：${templateText}`;
+}
+
 /** Builds the HUD label for a currently active combat effect. */
 export function activeEffectUiText(effect: ActiveEffect, context: { playerId: string; enemyId: string }): EffectUiText {
   const targetLabel = actorLabel(effect.targetActorId ?? effect.ownerId, context);
@@ -190,6 +210,40 @@ function buildEnemyCounterText(item: ItemDefinition): string {
   if (item.effects.some((effect) => effect.stat === "incomingDamage")) return "先用小伤骗掉减伤，或改用状态、远程和连续压制。";
   if (item.effects.some((effect) => effect.kind === "rangedDamage")) return "读方向并躲闪；防御能吃下一部分伤害。";
   return "先用防御或躲闪观察它的触发窗口，再决定追击或撤开。";
+}
+
+function enchantmentEffectText(enchantment: EnchantmentKind): string {
+  switch (enchantment) {
+    case "burning":
+      return "施加 1-3 层灼烧";
+    case "venomous":
+      return "施加 1-3 层中毒";
+    case "frost":
+      return "施加 1-2 层冻结";
+    case "blood":
+      return "施加 1-3 层流血";
+    case "deadly":
+      return "获得 50% 暴击率，暴击使本次伤害 +1";
+    case "radiant":
+      return "结算 1 次基础效果，不复制附魔本身";
+  }
+}
+
+function enchantmentTemplateText(template: EnchantmentCarrierTemplate, effect: string): string {
+  switch (template) {
+    case "HIT":
+      return `该道具直接命中并造成伤害时，额外${effect}。`;
+    case "PRIME":
+      return `该道具强化下一次攻击；那次攻击命中时额外${effect}。`;
+    case "COUNTER":
+      return `该道具的反应条件成立时，对触发者或当前敌人额外${effect}。`;
+    case "SUPPORT":
+      return `原效果成功后刷新 1 次附魔预备；下一次有效命中额外${effect}。`;
+    case "TRAP":
+      return `布置时不触发；敌人踩中或触发地物时额外${effect}。`;
+    case "AMMO":
+      return `补充成功后，下一发有效子弹额外${effect}。`;
+  }
 }
 
 function statEffectText(stat: ActiveEffectStat, amount: number): string {

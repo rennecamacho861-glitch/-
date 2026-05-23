@@ -79,3 +79,17 @@
 - The highlight uses a dynamic outer frame, glow pulse, and a `选择此项` label; color is not the only cue.
 - Disabled or blocked actions should explain why, for example `先防御读取情报`.
 - If the tutorial allows a mistake demonstration, the action remains clickable and the result must be restored through simulation checkpoint rules.
+
+## Pattern: Combat Clarity Coaching
+
+- 当玩家选择防御但没有获得优势时，反馈 toast 必须说明具体原因：没有实际减免、枪线不吃普通防御、或伤害仍形成重伤。
+- 当玩家根据 `attackDirection` 选择了正确方向但闪避失败时，反馈 toast 必须说明“读向正确但仍需概率判定”，并显示本次闪避率。
+- 这些提示使用 `kind="tutorial"` 与 `tone="intel"`，属于战斗教学，不改变结算结果。
+- 提示文本必须来自模拟层真实结算参数，不允许 HUD 猜测概率或原因。
+
+## Pattern: Enchanted Item Treatment
+
+- 已附魔道具按钮必须同时显示附魔名前缀、基础道具名和 hover/focus 附魔效果说明。
+- 附魔效果说明必须写清生效端口，例如直接命中、下一次攻击、反应条件、支援预备、陷阱触发或下一发子弹。
+- HUD 使用 `data-enchantment` 添加附魔边框/辉光；颜色只作为辅助，规则理解依赖文本。
+- 神话宝石的 `data-rarity="mythic"` 红色视觉与附魔实例边框可以叠加，但不可替代附魔效果说明。

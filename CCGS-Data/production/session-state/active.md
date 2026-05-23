@@ -1,5 +1,27 @@
 # Active Session State
 
+## Session Extract - /quick-design + /combat-tweak 2026-05-23 v0.8.21
+
+- Verdict: COMPLETE
+- Topic: 防御对基础近战进攻稳定获得优势
+- Files changed: `CCGS-Data/design/quick-specs/stable-defense-vs-attack-advantage-2026-05-23.md`, `CCGS-Data/design/gdd/rulebook.md`, `CCGS-Data/design/gdd/combat-system.md`, `CCGS-Data/project-docs/architecture/system-framework.md`, `src/sim/GameSimulation.ts`, `tests/unit/combat_system_effective_defense_test.mjs`, `CCGS-Data/production/changelogs/2026-05-23-v0-8-21-stable-defense-vs-attack-changelog.md`, `CCGS-Data/production/qa/reports/2026-05-23-v0-8-21-stable-defense-vs-attack-qa-report.md`, `CCGS-Data/production/tracking/bug-tracker.md`
+- Implemented: 基础近战 `Attack` 打进 `Defense` 时直接标记有效防御；防御者稳定获得优势；攻击方不再因为防御后伤害、显著伤害或重伤覆盖该优势；远程枪线仍不被普通防御稳定克制。
+- Validation: `npm test` 129/129 通过；`npm run build` 通过。
+- Changelog: `CCGS-Data/production/changelogs/2026-05-23-v0-8-21-stable-defense-vs-attack-changelog.md`
+- QA: `CCGS-Data/production/qa/reports/2026-05-23-v0-8-21-stable-defense-vs-attack-qa-report.md`
+- Notes: 敌人获得防御优势后仍会按现有 AI 立刻把优势压成下一次速度或后撤，因此 HUD 不一定长期显示敌方优势点；若玩家仍困惑，应补日志/提示。
+
+## Session Extract - /quick-design + /hotfix 2026-05-23 v0.8.19
+
+- Verdict: COMPLETE
+- Topic: 战斗判定解释与附魔展示清晰化
+- Files changed: `CCGS-Data/design/quick-specs/combat-clarity-enchantment-display-2026-05-23.md`, `CCGS-Data/design/gdd/rulebook.md`, `CCGS-Data/design/gdd/combat-system.md`, `CCGS-Data/design/ux/interaction-patterns.md`, `CCGS-Data/project-docs/architecture/system-framework.md`, `src/sim/GameSimulation.ts`, `src/sim/itemText.ts`, `src/main.ts`, `src/styles.css`, `tests/integration/combat_clarity_feedback_test.mjs`, `tests/unit/combat_system_effective_defense_test.mjs`, `tests/unit/item_text.test.mjs`, `CCGS-Data/production/changelogs/2026-05-23-v0-8-19-combat-clarity-enchantment-display-changelog.md`, `CCGS-Data/production/qa/reports/2026-05-23-v0-8-19-combat-clarity-enchantment-display-qa-report.md`, `CCGS-Data/production/tracking/bug-tracker.md`
+- Implemented: 有效防御最低减伤从 2 点调为 1 点；玩家防御但未获得优势时会弹出原因解释；玩家选择正确闪避方向但概率判定失败时会弹出闪避率与判定值解释；附魔道具 tooltip 增加对应附魔颜色、承载模板和具体效果说明；HUD 道具按钮新增六类附魔边框与辉光。
+- Validation: `npm test` 127/127 通过；`npm run build` 通过。
+- Changelog: `CCGS-Data/production/changelogs/2026-05-23-v0-8-19-combat-clarity-enchantment-display-changelog.md`
+- QA: `CCGS-Data/production/qa/reports/2026-05-23-v0-8-19-combat-clarity-enchantment-display-qa-report.md`
+- Notes: 本轮未修改附魔实际伤害/状态端口，也未把拾取三选一扩展为预生成附魔实例；若需要在拾取 offer 上提前显示附魔，需要单独扩展 `LootNode` 的实例化结构。
+
 ## Session Extract - /quick-implementation 2026-05-21 v0.8.18
 
 - Verdict: COMPLETE

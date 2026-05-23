@@ -319,6 +319,7 @@ h2 {
 }
 
 .tool-button {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -364,6 +365,36 @@ h2 {
   --rarity-glow: rgba(221, 55, 72, 0.28);
 }
 
+[data-enchantment="burning"] {
+  --enchant-border: rgba(245, 106, 54, 0.9);
+  --enchant-glow: rgba(245, 106, 54, 0.24);
+}
+
+[data-enchantment="venomous"] {
+  --enchant-border: rgba(102, 214, 111, 0.9);
+  --enchant-glow: rgba(102, 214, 111, 0.22);
+}
+
+[data-enchantment="frost"] {
+  --enchant-border: rgba(123, 210, 229, 0.9);
+  --enchant-glow: rgba(123, 210, 229, 0.24);
+}
+
+[data-enchantment="blood"] {
+  --enchant-border: rgba(198, 55, 74, 0.92);
+  --enchant-glow: rgba(198, 55, 74, 0.24);
+}
+
+[data-enchantment="deadly"] {
+  --enchant-border: rgba(229, 204, 132, 0.94);
+  --enchant-glow: rgba(229, 204, 132, 0.24);
+}
+
+[data-enchantment="radiant"] {
+  --enchant-border: rgba(179, 143, 255, 0.94);
+  --enchant-glow: rgba(179, 143, 255, 0.26);
+}
+
 .tool-button[data-rarity],
 .pickup-options button[data-rarity] {
   border-color: var(--rarity-border);
@@ -400,6 +431,27 @@ h2 {
   opacity: 0.68;
 }
 
+.tool-button[data-enchantment] {
+  border-color: var(--enchant-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 210, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.52),
+    inset 0 0 0 1px var(--rarity-glow),
+    0 0 18px var(--enchant-glow),
+    0 8px 18px rgba(0, 0, 0, 0.24);
+}
+
+.tool-button[data-enchantment]::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border: 1px solid var(--enchant-border);
+  border-radius: 5px;
+  opacity: 0.38;
+  pointer-events: none;
+  box-shadow: inset 0 0 12px var(--enchant-glow);
+}
+
 .tool-copy {
   flex: 1 1 auto;
   min-width: 0;
@@ -431,7 +483,7 @@ h2 {
   right: calc(100% + 8px);
   z-index: 9;
   display: none;
-  width: min(260px, calc(100vw - 56px));
+  width: min(320px, calc(100vw - 56px));
   border: 1px solid rgba(238, 231, 216, 0.18);
   border-left: 3px solid var(--rarity-border, rgba(112, 184, 173, 0.6));
   border-radius: 6px;
@@ -441,7 +493,9 @@ h2 {
   box-shadow:
     inset 0 1px 0 rgba(255, 230, 176, 0.08),
     0 14px 36px rgba(0, 0, 0, 0.48);
-  padding: 9px;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.42;
   pointer-events: none;
 }
 
@@ -449,7 +503,7 @@ h2 {
 .tool-button:focus-visible .tool-tooltip,
 .tool-button:focus-within .tool-tooltip {
   display: grid;
-  gap: 5px;
+  gap: 7px;
 }
 
 .tool-hint,
@@ -457,14 +511,25 @@ h2 {
   display: block;
   min-width: 0;
   color: rgba(238, 231, 216, 0.74);
-  font-size: 12px;
-  line-height: 1.38;
+  font-size: 14px;
+  line-height: 1.46;
   overflow-wrap: anywhere;
 }
 
 .tool-limit,
 .pickup-limit {
   color: rgba(112, 184, 173, 0.82);
+}
+
+.tool-enchantment {
+  display: block;
+  min-width: 0;
+  border-top: 1px solid rgba(238, 231, 216, 0.1);
+  padding-top: 5px;
+  color: var(--enchant-border, rgba(229, 204, 132, 0.88));
+  font-size: 14px;
+  line-height: 1.46;
+  overflow-wrap: anywhere;
 }
 
 .tool-icon,
@@ -1286,7 +1351,7 @@ button[data-tutorial-highlight="true"]::after {
     top: calc(100% + 6px);
     right: auto;
     left: 0;
-    width: min(260px, calc(100vw - 36px));
+    width: min(320px, calc(100vw - 36px));
   }
 
   .tutorial-panel {

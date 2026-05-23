@@ -1,6 +1,6 @@
 ﻿import { itemIconUrl } from "./render/gridDungeonAssets";
 import { GameSimulation } from "./sim/GameSimulation";
-import { activeEffectUiText, itemEnemyCounter, itemUiDescription, itemUiLimit, statusEffectUiText } from "./sim/itemText";
+import { activeEffectUiText, itemEnchantmentUiText, itemEnemyCounter, itemUiDescription, itemUiLimit, statusEffectUiText } from "./sim/itemText";
 import { ITEMS } from "./sim/items";
 import { calculateDerivedStats } from "./sim/stats";
 import { enchantedItemName } from "./sim/systems/enchantmentSystem";
@@ -97,15 +97,18 @@ function renderHud(): void {
         : `<span class="tool-icon tool-icon-fallback" aria-hidden="true">${escapeHtml(slot.item.category.slice(0, 1).toUpperCase())}</span>`;
       const description = itemUiDescription(slot.item.id);
       const limit = slotRuntimeText(slot, manualRound);
-      const title = `${description} ${limit}`;
+      const enchantmentText = itemEnchantmentUiText(slot);
+      const title = `${description} ${limit}${enchantmentText ? ` ${enchantmentText}` : ""}`;
       const displayName = enchantedItemName(slot);
-      return `<button class="tool-button" data-item="${slot.item.id}" data-category="${slot.item.category}" data-rarity="${slot.item.rarity}" ${disabled ? "disabled" : ""} title="${escapeHtml(title)}" aria-label="${escapeHtml(`${displayName}：${title}`)}">
+      const enchantmentAttr = slot.affix?.kind === "enchantment" ? ` data-enchantment="${slot.affix.enchantment}"` : "";
+      return `<button class="tool-button" data-item="${slot.item.id}" data-category="${slot.item.category}" data-rarity="${slot.item.rarity}"${enchantmentAttr} ${disabled ? "disabled" : ""} title="${escapeHtml(title)}" aria-label="${escapeHtml(`${displayName}：${title}`)}">
         ${icon}
         <span class="tool-copy">
           <span class="tool-label">${escapeHtml(displayName)}</span>
           <span class="tool-tooltip" role="tooltip">
             <span class="tool-hint">${escapeHtml(description)}</span>
             <span class="tool-limit">${escapeHtml(limit)}</span>
+            ${enchantmentText ? `<span class="tool-enchantment">${escapeHtml(enchantmentText)}</span>` : ""}
           </span>
         </span>
         ${charges}
