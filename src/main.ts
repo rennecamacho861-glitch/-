@@ -5,7 +5,7 @@ import { ITEMS } from "./sim/items";
 import { calculateDerivedStats } from "./sim/stats";
 import { enchantedItemName } from "./sim/systems/enchantmentSystem";
 import type { SimulationPort } from "./sim/ports";
-import type { ActiveEffect, CombatAction, FeedbackEvent, IntelEntry, InventorySlot, ItemId, ItemRarity, StatusEffect } from "./sim/types";
+import type { ActiveEffect, CombatAction, FeedbackEvent, IntelEntry, InventorySlot, ItemId, ItemRarity, StatusEffect, TutorialInput } from "./sim/types";
 import "./styles.css";
 
 const simulation: SimulationPort = new GameSimulation(createRunSeed());
@@ -32,10 +32,11 @@ type TutorialMessage = {
   body: string;
 };
 
-const tutorialPreferenceKey = "zhaomian-tutorial-v1";
+const tutorialPreferenceKey = "zhaomian-tutorial-v2";
 let tutorialPreference: TutorialPreference | null = readTutorialPreference();
 let activeTutorial: TutorialMessage | undefined;
 const shownTutorialIds = new Set<string>();
+const shownScriptedTutorialSteps = new Set<string>();
 
 const actionLabels = {
   attack: "进攻",
@@ -56,9 +57,18 @@ function renderHud(): void {
   const encounterEnemy = encounter ? state.map.aiUnits.find((unit) => unit.id === encounter.enemyId) : undefined;
   const pickup = state.pendingPickupOffer;
   const isStarterPickup = pickup?.nodeId === "starter";
+  const hideStarterChoiceForTutorialNotice = Boolean(
+    activeFeedback?.kind === "tutorial" && isStarterPickup && tutorialPreference === "on"
+  );
   const playerAdvantagePoints = encounter?.advantage.playerPoints ?? 0;
   const enemyAdvantagePoints = encounter?.advantage.enemyPoints ?? 0;
   const hasPlayerAdvantage = playerAdvantagePoints > 0;
+  const tutorialScenario = state.tutorialScenario?.active ? state.tutorialScenario : undefined;
+  const tutorialAttrs = (input: TutorialInput, baseDisabled = false): string => {
+    const disabled = baseDisabled || Boolean(tutorialScenario && !tutorialScenario.allowedInputs.includes(input));
+    const highlighted = tutorialScenario?.highlightedInput === input;
+    return `${disabled ? "disabled" : ""} ${highlighted ? 'data-tutorial-highlight="true"' : ""}`;
+  };
   const manualRound = encounter?.round ?? state.turn;
   const playerMaxHp = calculateDerivedStats(state.player.stats).maxHp;
   const healthFeedback = healthFeedbackState(state.player.hp, playerMaxHp);
@@ -135,16 +145,16 @@ function renderHud(): void {
         </div>
         ${activeEffectStrip}
         <div class="battle-actions">
-          <button data-action="attack" ${encounter.phase !== "chooseAction" ? "disabled" : ""}>进攻 <small>比速度/力量</small></button>
-          <button data-action="defend" ${encounter.phase !== "chooseAction" ? "disabled" : ""}>防御 <small>减伤/看数值</small></button>
-          <button data-action="dodge-left" ${encounter.phase !== "chooseAction" ? "disabled" : ""}>左闪 <small>方向预判</small></button>
-          <button data-action="dodge-right" ${encounter.phase !== "chooseAction" ? "disabled" : ""}>右闪 <small>方向预判</small></button>
+          <button data-action="attack" ${tutorialAttrs("attack", encounter.phase !== "chooseAction")}>进攻 <small>比速度/力量</small></button>
+          <button data-action="defend" ${tutorialAttrs("defend", encounter.phase !== "chooseAction")}>防御 <small>减伤/看数值</small></button>
+          <button data-action="dodge-left" ${tutorialAttrs("dodge-left", encounter.phase !== "chooseAction")}>左闪 <small>方向预判</small></button>
+          <button data-action="dodge-right" ${tutorialAttrs("dodge-right", encounter.phase !== "chooseAction")}>右闪 <small>方向预判</small></button>
         </div>
         <div class="secondary-actions">
-          <button data-special="flee" ${!hasPlayerAdvantage ? "disabled" : ""} title="支付 1 点优势；成功率主要看你的速度、敌人速度、软底鞋和逃跑类道具修正。">逃跑 <small>-1 优势</small></button>
-          <button data-special="pressPower" ${!hasPlayerAdvantage ? "disabled" : ""} title="支付 1 点优势；下一次近战伤害 +1。重复选择会继续叠加。">续战·力量 <small>-1 优势</small></button>
-          <button data-special="pressTempo" ${!hasPlayerAdvantage ? "disabled" : ""} title="支付 1 点优势；下一次动作速度 +1。重复选择会继续叠加。">续战·节奏 <small>-1 优势</small></button>
-          <button data-special="persuade" ${!hasPlayerAdvantage ? "disabled" : ""} title="支付 1 点优势；成功率主要看智力、已确认情报、支付战利、说服道具和敌人当前伤势。">说服 <small>-1 优势</small></button>
+          <button data-special="flee" ${!hasPlayerAdvantage || tutorialScenario ? "disabled" : ""} title="支付 1 点优势；成功率主要看你的速度、敌人速度、软底鞋和逃跑类道具修正。">逃跑 <small>-1 优势</small></button>
+          <button data-special="pressPower" ${tutorialAttrs("pressPower", !hasPlayerAdvantage)} title="支付 1 点优势；下一次近战伤害 +1。重复选择会继续叠加。">续战·力量 <small>-1 优势</small></button>
+          <button data-special="pressTempo" ${tutorialAttrs("pressTempo", !hasPlayerAdvantage)} title="支付 1 点优势；下一次动作速度 +1。重复选择会继续叠加。">续战·节奏 <small>-1 优势</small></button>
+          <button data-special="persuade" ${tutorialAttrs("persuade", !hasPlayerAdvantage)} title="支付 1 点优势；成功率主要看智力、已确认情报、支付战利、说服道具和敌人当前伤势。">说服 <small>-1 优势</small></button>
         </div>
         <div class="intel-list">
           <h3>已知信息</h3>
@@ -156,7 +166,7 @@ function renderHud(): void {
       </section>`
     : "";
 
-  const pickupPanel = pickup
+  const pickupPanel = pickup && !hideStarterChoiceForTutorialNotice
     ? `<section class="pickup-panel ${isStarterPickup ? "is-starter" : ""}">
         <div class="battle-header">
           <div>
@@ -257,7 +267,7 @@ hud.addEventListener("click", (event) => {
   }
 
   if (activeFeedback) return;
-  if (tutorialPreference === null || activeTutorial) return;
+  if (tutorialPreference === null || activeTutorial || scriptedTutorialBlocking(simulation.snapshot())) return;
 
   if (command === "restart" || button.dataset.reset) {
     clearFeedbackToast();
@@ -278,7 +288,7 @@ hud.addEventListener("click", (event) => {
 window.addEventListener("keydown", (event) => {
   if (simulation.snapshot().outcome) return;
   if (activeFeedback) return;
-  if (tutorialPreference === null || activeTutorial) return;
+  if (tutorialPreference === null || activeTutorial || scriptedTutorialBlocking(simulation.snapshot())) return;
   if (event.key === "ArrowUp" || event.key.toLowerCase() === "w") simulation.move(0, -1);
   if (event.key === "ArrowDown" || event.key.toLowerCase() === "s") simulation.move(0, 1);
   if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") simulation.move(-1, 0);
@@ -339,7 +349,7 @@ function tutorialLayerMarkup(state: ReturnType<SimulationPort["snapshot"]>): str
     return `<aside class="tutorial-panel tutorial-prompt" role="dialog" aria-modal="true" aria-label="新手教程">
       <span class="eyebrow">新手教程</span>
       <h2>需要一轮简短教学吗？</h2>
-      <p>教程会在第一次遇到拾取、视野、敌人和照面时弹出提示；关闭后不会再打断游玩。</p>
+      <p>教程会先进入一段独立训练照面，练习防御读情报、方向闪避、优势下注、击杀和说服。完成或跳过后，才进入正式开局四选一。</p>
       <div class="tutorial-actions">
         <button data-tutorial="enable">需要</button>
         <button data-tutorial="disable">不需要</button>
@@ -348,17 +358,70 @@ function tutorialLayerMarkup(state: ReturnType<SimulationPort["snapshot"]>): str
   }
 
   if (tutorialPreference !== "on") return "";
-  if (!activeTutorial) activeTutorial = nextTutorialMessage(state);
-  if (!activeTutorial) return "";
-  return `<aside class="tutorial-panel" role="dialog" aria-modal="true" aria-label="${escapeHtml(activeTutorial.title)}">
-    <span class="eyebrow">教学</span>
-    <h2>${escapeHtml(activeTutorial.title)}</h2>
-    <p>${escapeHtml(activeTutorial.body)}</p>
-    <div class="tutorial-actions">
-      <button data-tutorial="next">知道了</button>
-      <button data-tutorial="disable">关闭教程</button>
-    </div>
-  </aside>`;
+  const scriptedMessage = scriptedTutorialMessage(state);
+  if (scriptedMessage) {
+    return `<aside class="tutorial-panel scripted-tutorial-panel" role="dialog" aria-modal="true" aria-label="${escapeHtml(scriptedMessage.title)}">
+      <span class="eyebrow">脚本教学</span>
+      <h2>${escapeHtml(scriptedMessage.title)}</h2>
+      <p>${escapeHtml(scriptedMessage.body)}</p>
+      <div class="tutorial-goal">${escapeHtml(scriptedMessage.goal)}</div>
+      <div class="tutorial-actions">
+        <button data-tutorial="scripted-next">知道了</button>
+        <button data-tutorial="skip-scripted">跳过教程</button>
+      </div>
+    </aside>`;
+  }
+  return "";
+}
+
+function scriptedTutorialBlocking(state: ReturnType<SimulationPort["snapshot"]>): boolean {
+  return Boolean(scriptedTutorialMessage(state));
+}
+
+function scriptedTutorialMessage(
+  state: ReturnType<SimulationPort["snapshot"]>
+): { title: string; body: string; goal: string } | undefined {
+  const scenario = state.tutorialScenario;
+  if (!scenario?.active || shownScriptedTutorialSteps.has(scenario.stepId)) return undefined;
+  const requiredDodge = scenario.requiredDodge === "right" ? "右闪" : "左闪";
+  const messages: Record<string, { title: string; body: string; goal: string }> = {
+    "enemy1-guard": {
+      title: "第一课：别急着进攻",
+      body: "这名训练敌高伤、低体质，速度也不慢。直接进攻会被先手重击惩罚。第一手先防御，稳定减伤并读取属性情报。",
+      goal: "点击战斗面板中的「防御」。想试「进攻」也可以，系统会演示为什么危险。"
+    },
+    "enemy1-direction-guard": {
+      title: "第二课：情报不是装饰",
+      body: "防御已经让你看见了敌人的低体质。再防御一次，读取下一次攻击方向，为闪避做准备。",
+      goal: "再次点击「防御」。"
+    },
+    "enemy1-dodge": {
+      title: "第三课：按情报闪避",
+      body: "你已经知道敌人的下一刀方向。闪避会根据方向和速度判定；猜对方向时更容易成功，并能获得更大的优势窗口。",
+      goal: `点击「${requiredDodge}」。`
+    },
+    "enemy1-invest-tempo": {
+      title: "第四课：优势是资源",
+      body: "优势会积累，也可以支付。把 3 点优势全部投入速度，下一次进攻就能抢在高速敌人前面。",
+      goal: "连续点击「续战·节奏」三次。"
+    },
+    "enemy1-kill": {
+      title: "第五课：抢到先手后再杀",
+      body: "速度下注完成。现在进攻会先手命中，让低体质敌人重伤并丢掉后手。继续追击即可击杀。",
+      goal: "点击「进攻」。如果敌人还没倒下，再进攻一次。"
+    },
+    "enemy2-intel": {
+      title: "第六课：不是每场都要杀",
+      body: "第二名训练敌用于教学说服。先防御获得情报和优势，确认对方智力很低。",
+      goal: "点击「防御」。"
+    },
+    "enemy2-persuade": {
+      title: "第七课：用优势说服",
+      body: "敌人智力低，且你已有优势。说服会支付 1 点优势，让对方休战。正式局里说服成功率还会受智力、情报、战利支付和道具影响。",
+      goal: "点击「说服」，完成教程。"
+    }
+  };
+  return messages[scenario.stepId];
 }
 
 function nextTutorialMessage(state: ReturnType<SimulationPort["snapshot"]>): TutorialMessage | undefined {
@@ -430,12 +493,28 @@ function handleTutorialAction(action: string): void {
     tutorialPreference = "on";
     writeTutorialPreference("on");
     activeTutorial = undefined;
+    shownScriptedTutorialSteps.clear();
+    simulation.beginTutorialScenario();
     return;
   }
   if (action === "disable") {
     tutorialPreference = "off";
     writeTutorialPreference("off");
     activeTutorial = undefined;
+    if (simulation.snapshot().tutorialScenario?.active) simulation.skipTutorialScenario();
+    return;
+  }
+  if (action === "scripted-next") {
+    const scenario = simulation.snapshot().tutorialScenario;
+    if (scenario?.active) shownScriptedTutorialSteps.add(scenario.stepId);
+    return;
+  }
+  if (action === "skip-scripted") {
+    tutorialPreference = "off";
+    writeTutorialPreference("off");
+    activeTutorial = undefined;
+    shownScriptedTutorialSteps.clear();
+    simulation.skipTutorialScenario();
     return;
   }
   if (action === "next" && activeTutorial) {

@@ -19,6 +19,8 @@ export interface SimulationReadPort {
  */
 export interface SimulationCommandPort {
   reset(seed?: string): void;
+  beginTutorialScenario(): void;
+  skipTutorialScenario(): void;
   move(dx: number, dy: number): void;
   choosePickup(itemId: ItemId | null): void;
   useItem(itemId: ItemId): void;

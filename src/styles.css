@@ -580,6 +580,17 @@ small {
   line-height: 1.58;
 }
 
+.tutorial-goal {
+  margin-top: 12px;
+  border: 1px solid rgba(213, 170, 85, 0.34);
+  border-radius: 8px;
+  background: rgba(213, 170, 85, 0.1);
+  color: rgba(255, 230, 176, 0.9);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 10px;
+}
+
 .tutorial-actions {
   display: flex;
   gap: 8px;
@@ -588,6 +599,82 @@ small {
 
 .tutorial-actions button {
   flex: 1 1 0;
+}
+
+button[data-tutorial-highlight="true"] {
+  border-color: rgba(255, 198, 91, 0.88);
+  box-shadow:
+    0 0 0 1px rgba(255, 198, 91, 0.38),
+    0 0 22px rgba(255, 198, 91, 0.2),
+    inset 0 1px 0 rgba(255, 230, 176, 0.18);
+  transform: translateY(-1px);
+}
+
+button[data-tutorial-highlight="true"]::after {
+  content: "教学";
+  justify-self: start;
+  border: 1px solid rgba(255, 198, 91, 0.4);
+  border-radius: 999px;
+  color: rgba(255, 230, 176, 0.92);
+  font-size: 10px;
+  letter-spacing: 0;
+  padding: 1px 6px;
+}
+
+button[data-tutorial-highlight="true"] {
+  position: relative;
+  overflow: visible;
+  animation: tutorial-choice-breathe 920ms ease-in-out infinite;
+}
+
+button[data-tutorial-highlight="true"]::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  z-index: -1;
+  border: 2px solid rgba(255, 198, 91, 0.72);
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 198, 91, 0.16), transparent),
+    radial-gradient(circle at 50% 50%, rgba(255, 198, 91, 0.18), transparent 62%);
+  box-shadow:
+    0 0 0 1px rgba(255, 198, 91, 0.22),
+    0 0 28px rgba(255, 198, 91, 0.34);
+  pointer-events: none;
+  animation: tutorial-choice-ring 920ms ease-in-out infinite;
+}
+
+button[data-tutorial-highlight="true"]::after {
+  content: "选择此项";
+  position: absolute;
+  right: 8px;
+  top: -14px;
+  background: rgba(21, 17, 9, 0.96);
+  line-height: 1;
+  padding: 4px 7px;
+  pointer-events: none;
+}
+
+@keyframes tutorial-choice-breathe {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.18);
+  }
+}
+
+@keyframes tutorial-choice-ring {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.045);
+  }
 }
 
 .feedback-toast::before {
@@ -688,6 +775,21 @@ small {
     radial-gradient(circle at 18% 50%, rgba(220, 184, 92, 0.26), transparent 28%),
     linear-gradient(90deg, transparent, rgba(112, 184, 173, 0.14), transparent);
   animation: heal-window-pulse 820ms ease-out both;
+}
+
+.feedback-toast.kind-tutorial {
+  bottom: clamp(210px, 42vh, 340px);
+  border-color: rgba(255, 198, 91, 0.45);
+  border-left-color: rgba(255, 198, 91, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 176, 0.14),
+    0 22px 60px rgba(0, 0, 0, 0.54),
+    0 0 34px rgba(255, 198, 91, 0.16);
+}
+
+.feedback-toast.kind-tutorial strong {
+  font-size: 16px;
+  line-height: 1.55;
 }
 
 @keyframes feedback-toast-in {
@@ -1211,6 +1313,8 @@ small {
   button,
   .feedback-toast,
   .feedback-toast::before,
+  button[data-tutorial-highlight="true"],
+  button[data-tutorial-highlight="true"]::before,
   .health-screen-effects,
   .health-blood-layer,
   .health-breath-layer,

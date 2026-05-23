@@ -1,0 +1,12 @@
+{
+  "required_frontmatter": ["layer", "architecture_module", "status"],
+  "required_sections": [
+    "Overview",
+    "Governing ADRs",
+    "GDD Requirements",
+    "Asset Dependencies",
+    "Art-Tech Decoupling Strategy",
+    "Definition of Done"
+  ],
+  "required_dependency_fields": []
+}

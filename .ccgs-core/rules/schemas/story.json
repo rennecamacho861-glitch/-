@@ -1,0 +1,12 @@
+{
+  "required_frontmatter": ["epic", "status", "layer", "type"],
+  "required_sections": [
+    "Context",
+    "Acceptance Criteria",
+    "Implementation Notes",
+    "QA Test Cases",
+    "Test Evidence",
+    "Dependencies"
+  ],
+  "required_dependency_fields": ["Code Dependencies", "Asset Dependencies"]
+}

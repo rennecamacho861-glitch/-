@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Grid Dungeon Audio Model Pending</title>
+    <style>
+      body {
+        margin: 24px;
+        background: #080b0c;
+        color: #d8e5dc;
+        font-family: system-ui, sans-serif;
+      }
+      main {
+        max-width: 900px;
+      }
+      section {
+        border: 1px solid #31463e;
+        padding: 16px;
+        margin: 12px 0;
+        background: #0d1415;
+      }
+      code {
+        color: #8ff0b5;
+        word-break: break-all;
+      }
+      .warn {
+        color: #f2c36b;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Grid Dungeon Audio Model Pending</h1>
+      <section>
+        <p class="warn">旧的程序化合成音效已废弃，不再作为试听批准对象。</p>
+        <p>当前要求是使用音效生成模型或实录 Foley 生成素材。请先根据 prompt pack 产出 WAV，再运行导入脚本。</p>
+      </section>
+      <section>
+        <h2>Prompt Pack</h2>
+        <code>CCGS-Data/design/audio/source/grid-dungeon/model-prompts-iter03.json</code>
+      </section>
+      <section>
+        <h2>模型输出目录</h2>
+        <code>CCGS-Data/design/audio/source/grid-dungeon/model-renders/iter03/</code>
+      </section>
+      <section>
+        <h2>导入命令</h2>
+        <code>node scripts/audio/import-grid-dungeon-model-audio.mjs</code>
+      </section>
+      <section>
+        <h2>检查命令</h2>
+        <code>node scripts/audio/import-grid-dungeon-model-audio.mjs --check</code>
+      </section>
+    </main>
+  </body>
+</html>

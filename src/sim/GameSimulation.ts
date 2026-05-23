@@ -1,4 +1,4 @@
-import { ALL_ITEM_IDS, ITEMS } from "./items";
+import { ALL_ITEM_IDS, ITEMS, createInventorySlot } from "./items";
 import { itemUiDescription } from "./itemText";
 import { directionFromDelta, directionLabel, distance, isSamePosition, createMap } from "./map";
 import type { SimulationListener, SimulationPort, Unsubscribe } from "./ports";
@@ -56,6 +56,14 @@ import {
   hasLineOfSight as hasLineOfSightForState,
   updateVisibilityState
 } from "./systems/visibilitySystem";
+import {
+  TUTORIAL_ENEMY_ONE_ID,
+  TUTORIAL_ENEMY_TWO_ID,
+  configureTutorialStep,
+  createTutorialScenarioState,
+  isTutorialEnemyId,
+  tutorialInputFromCombatAction
+} from "./systems/tutorialSystem";
 import type {
   ActiveEffect,
   ActiveEffectStat,
@@ -76,6 +84,8 @@ import type {
   Position,
   StatKey,
   StatusEffectType,
+  TutorialInput,
+  TutorialStepId,
   VisibilityLevel
 } from "./types";
 const TURN_LIMIT = 72;
@@ -178,6 +188,30 @@ export class GameSimulation implements SimulationPort {
   /** Resets the run to its initial seeded state. */
   reset(seed?: string): void {
     if (seed) this.seed = seed;
+    this.resetRuntimeCounters();
+    this.state = this.createInitialState();
+    this.updateVisibility();
+    this.emit();
+  }
+
+  /** Starts the authored tutorial scenario before the formal starter pickup. */
+  beginTutorialScenario(): void {
+    this.resetRuntimeCounters();
+    this.state = this.createTutorialState();
+    this.updateVisibility();
+    this.checkEncounter();
+    this.pushLog("教程开始：请跟随高亮动作完成训练照面。");
+    this.emit();
+  }
+
+  /** Skips the authored tutorial and returns to the normal starter pickup. */
+  skipTutorialScenario(): void {
+    if (!this.state.tutorialScenario?.active) return;
+    this.resetToStarterAfterTutorial("教程已跳过", "正式开局四选一已经恢复。");
+    this.emit();
+  }
+
+  private resetRuntimeCounters(): void {
     this.revealBoost = 0;
     this.signalFlareTurns = 0;
     this.trapCounter = 0;
@@ -185,9 +219,6 @@ export class GameSimulation implements SimulationPort {
     this.effectCounter = 0;
     this.ambushedEnemyIds.clear();
     this.droppedEnemyIds.clear();
-    this.state = this.createInitialState();
-    this.updateVisibility();
-    this.emit();
   }
 
   private emptyAdvantage(): AdvantageState {
@@ -253,6 +284,11 @@ export class GameSimulation implements SimulationPort {
   /** Attempts to move the player by one grid delta and advances the run when legal. */
   move(dx: number, dy: number): void {
     if (this.state.pendingPickupOffer || this.state.encounter || this.state.outcome) return;
+    if (this.state.tutorialScenario?.active) {
+      this.pushLog("教程中请先完成当前提示动作。");
+      this.emit();
+      return;
+    }
     const next = {
       x: this.state.player.position.x + dx,
       y: this.state.player.position.y + dy
@@ -311,6 +347,11 @@ export class GameSimulation implements SimulationPort {
   useItem(itemId: ItemId): void {
     const slot = this.findSlot(this.state.player, itemId);
     if (!slot || this.state.pendingPickupOffer || this.state.outcome) return;
+    if (this.state.tutorialScenario?.active) {
+      this.pushLog("教程战斗暂时锁定道具使用，请按提示学习基础动作。");
+      this.emit();
+      return;
+    }
     if (!isManualSlotEquipped(this.state.player, slot)) {
       this.pushLog(`${slot.item.name}没有装入当前主动槽。`);
       this.emit();
@@ -423,6 +464,11 @@ export class GameSimulation implements SimulationPort {
     const encounter = this.state.encounter;
     if (!encounter || this.state.outcome || encounter.phase !== "chooseAction") return;
 
+    if (this.resolveTutorialCombatAction(action)) {
+      this.emit();
+      return;
+    }
+
     const enemy = this.getEncounterEnemy();
     const aiAction = this.chooseEnemyAction(enemy);
     this.resolveActionRound(action, aiAction, enemy);
@@ -463,6 +509,11 @@ export class GameSimulation implements SimulationPort {
 
   /** Converts a player-owned advantage window into a one-shot combat bonus. */
   continueFight(choice: AdvantagePressChoice = "pressTempo"): void {
+    if (this.state.tutorialScenario?.active) {
+      this.resolveTutorialContinueFight(choice);
+      this.emit();
+      return;
+    }
     const encounter = this.state.encounter;
     if (!encounter || this.advantagePoints("player") < 1) return;
     const bonusTarget = bonusTargetForPressChoice(choice);
@@ -485,6 +536,11 @@ export class GameSimulation implements SimulationPort {
 
   /** Attempts to spend a player-owned advantage window on persuasion. */
   tryPersuade(): void {
+    if (this.state.tutorialScenario?.active) {
+      this.resolveTutorialPersuade();
+      this.emit();
+      return;
+    }
     const encounter = this.state.encounter;
     if (!encounter || this.advantagePoints("player") < 1) {
       this.pushLog("说服需要支付 1 点优势，让对方愿意听你的条件。");
@@ -536,7 +592,7 @@ export class GameSimulation implements SimulationPort {
     this.emit();
   }
 
-  private createInitialState(): GameState {
+  private createInitialState(options: { starterOffer?: boolean } = {}): GameState {
     const { map, playerStart, rareItemAppearances } = createMap(this.seed);
     const player: ActorState = {
       id: "player",
@@ -563,14 +619,112 @@ export class GameSimulation implements SimulationPort {
       inventory: player.inventory,
       intel: [],
       map,
-      pendingPickupOffer: { nodeId: "starter", itemIds: ["echo", "pistol", "bandage", "photon-cut"] },
+      pendingPickupOffer: options.starterOffer === false ? undefined : { nodeId: "starter", itemIds: ["echo", "pistol", "bandage", "photon-cut"] },
       feedbackEvents: [],
       log: ["你在牌桌般安静的迷宫里醒来。"]
     };
   }
 
+  private createTutorialState(): GameState {
+    const state = this.createInitialState({ starterOffer: false });
+    state.tutorialScenario = createTutorialScenarioState();
+    state.loot = 0;
+    state.intel = [];
+    state.feedbackEvents = [];
+    state.log = ["训练开始：这不是正式局。完成教程后才会进入开局四选一。"];
+    state.map.hints = [];
+    state.map.traps = [];
+    state.map.lootNodes = state.map.lootNodes.map((node) => ({ ...node, depleted: true }));
+    state.map.aiUnits = [];
+    state.player.inventory = [createInventorySlot("long-knife")];
+    state.inventory = state.player.inventory;
+    state.player.hp = calculateDerivedStats(state.player.stats).maxHp;
+    state.player.previousPosition = { ...state.player.position };
+
+    const firstEnemyPosition = this.findTutorialSpawn(state, state.player.position, 1, 1, []);
+    const secondEnemyPosition = this.findTutorialSpawn(state, state.player.position, 1, 1, [firstEnemyPosition]);
+    state.map.aiUnits = [
+      this.createTutorialEnemy(
+        TUTORIAL_ENEMY_ONE_ID,
+        "高速重击训练敌",
+        firstEnemyPosition,
+        { spirit: 1, intellect: 1, strength: 4, speed: 3, constitution: 1 },
+        ["long-knife"],
+        state.player.position
+      ),
+      this.createTutorialEnemy(
+        TUTORIAL_ENEMY_TWO_ID,
+        "低智谈判训练敌",
+        secondEnemyPosition,
+        { spirit: 2, intellect: 1, strength: 2, speed: 2, constitution: 3 },
+        [],
+        state.player.position
+      )
+    ];
+    return state;
+  }
+
+  private createTutorialEnemy(id: string, name: string, position: Position, stats: ActorState["stats"], itemIds: ItemId[], playerPosition: Position): ActorState {
+    return {
+      id,
+      name,
+      faction: "enemy",
+      position: { ...position },
+      previousPosition: { ...position },
+      facing: "west",
+      stats,
+      hp: calculateDerivedStats(stats).maxHp,
+      combatCount: 0,
+      inventory: itemIds.map((itemId) => createInventorySlot(itemId)),
+      defeated: false,
+      enemyTier: "normal",
+      patrol: [{ ...position }],
+      patrolIndex: 0,
+      awareness: { level: "aware", lastKnownPosition: { ...playerPosition }, source: "memory" },
+      aiState: "duel"
+    };
+  }
+
+  private findTutorialSpawn(state: GameState, origin: Position, minDistance: number, maxDistance: number, occupied: Position[]): Position {
+    const candidates: Position[] = [];
+    for (let radius = minDistance; radius <= maxDistance; radius += 1) {
+      for (let y = 0; y < state.map.height; y += 1) {
+        for (let x = 0; x < state.map.width; x += 1) {
+          const position = { x, y };
+          if (distance(position, origin) !== radius) continue;
+          if (occupied.some((used) => isSamePosition(used, position))) continue;
+          if (isSamePosition(position, origin)) continue;
+          if (!canEnterState(state, position)) continue;
+          if (radius === 1 && !canEnterState(state, position, origin)) continue;
+          candidates.push(position);
+        }
+      }
+      if (candidates.length > 0) return { ...candidates[0] };
+    }
+    if (maxDistance < 5) return this.findTutorialSpawn(state, origin, minDistance, 5, occupied);
+    return { x: Math.min(state.map.width - 1, origin.x + 1), y: origin.y };
+  }
+
+  private resetToStarterAfterTutorial(title: string, body: string): void {
+    this.resetRuntimeCounters();
+    this.state = this.createInitialState();
+    this.updateVisibility();
+    this.pushFeedback({
+      kind: "tutorial",
+      title,
+      body,
+      tone: "intel",
+      durationMs: 1400
+    });
+    this.pushLog(`${title}：${body}`);
+  }
+
   private advanceTurn(): void {
     this.state.turn += 1;
+    if (this.state.tutorialScenario?.active) {
+      this.updateVisibility();
+      return;
+    }
     this.moveAiUnits();
     this.collectEnemyLootNodes();
     this.updateVisibility();
@@ -918,6 +1072,7 @@ export class GameSimulation implements SimulationPort {
 
     if (enemy.defeated || enemy.hp <= 0) {
       enemy.defeated = true;
+      if (this.handleTutorialEnemyDefeated(enemy, encounter, roundLogStart)) return;
       this.state.loot += 2;
       this.pushCombatRoundFeedback(encounter, roundLogStart, "advantage", `你击败${enemy.name}。`);
       this.pushEnemyDefeatedFeedback(enemy);
@@ -990,7 +1145,12 @@ export class GameSimulation implements SimulationPort {
       const chance = correct
         ? clampPercent(75 + speedDiff * 8 + softShoes + itemModifier, 55, 95)
         : clampPercent(10 + speedDiff * 3 + softShoes + itemModifier, 5, 30);
-      if (this.rollPercent(`${attacker.id}-attack-${this.state.turn}`) <= chance) {
+      const tutorialGuaranteedDodge =
+        this.state.tutorialScenario?.active &&
+        defender.faction === "player" &&
+        attacker.id === TUTORIAL_ENEMY_ONE_ID &&
+        correct;
+      if (tutorialGuaranteedDodge || this.rollPercent(`${attacker.id}-attack-${this.state.turn}`) <= chance) {
         if (defender.faction === "player" && attacker.faction === "enemy") this.gainIntel(attacker, 1, "dodge");
         const wasted = this.discardNextMeleeHitEffects(attacker);
         const dodgeEffectText = this.resolveSuccessfulDodgeItemEffects(defender, attacker);
@@ -1464,7 +1624,226 @@ export class GameSimulation implements SimulationPort {
     return bonus.amount;
   }
 
+  private resolveTutorialCombatAction(action: CombatAction): boolean {
+    const scenario = this.state.tutorialScenario;
+    if (!scenario?.active) return false;
+    const encounter = this.state.encounter;
+    if (!encounter) {
+      this.pushTutorialFeedback("教程等待", "请先按当前教程提示完成训练照面。");
+      return true;
+    }
+    const enemy = this.getEncounterEnemy();
+    if (!isTutorialEnemyId(enemy.id)) return false;
+    const input = tutorialInputFromCombatAction(action);
+    if (!input || !scenario.allowedInputs.includes(input)) {
+      this.pushTutorialBlockedInput(input);
+      return true;
+    }
+
+    if (scenario.stepId === "enemy1-guard") {
+      if (input === "attack") {
+        this.pushTutorialFeedback(
+          "鲁莽进攻演示",
+          "这名敌人速度很快、伤害很高。若你第一手直接进攻，它会先砍中并造成重伤，让你的后手攻击丢失。先防御能减伤、读数值并拿优势。"
+        );
+        encounter.log.push({ round: encounter.round + 1, text: "教学提示：直接进攻会被高速重击压制。本步请改选防御。" });
+        return true;
+      }
+      this.setTutorialEnemyAttackDirection(enemy, "left");
+      this.resolveActionRound(action, { type: "attack", mode: "melee" }, enemy);
+      if (!this.state.encounter) return true;
+      this.revealEnemyStat(enemy, "defend", "constitution");
+      this.ensurePlayerAdvantageAtLeast(1);
+      this.setTutorialStep("enemy1-direction-guard");
+      this.pushTutorialFeedback("防御的收益", "防御会稳定减免伤害，并把敌人的弱点读出来。体质很低意味着血量和重伤承受都弱，后续可以准备击杀。");
+      return true;
+    }
+
+    if (scenario.stepId === "enemy1-direction-guard") {
+      this.setTutorialEnemyAttackDirection(enemy, "left");
+      this.resolveActionRound(action, { type: "attack", mode: "melee" }, enemy);
+      if (!this.state.encounter) return true;
+      this.setTutorialEnemyAttackDirection(enemy, "right");
+      this.revealEnemyAttackDirection(enemy, "defend");
+      this.ensurePlayerAdvantageAtLeast(1);
+      this.setTutorialStep("enemy1-dodge", "right");
+      this.pushTutorialFeedback("方向情报", "这次防御读到了下一刀来自右侧。闪避不是纯数值按钮，猜对方向才容易躲开并获得更大的优势窗口。");
+      return true;
+    }
+
+    if (scenario.stepId === "enemy1-dodge") {
+      if (input !== `dodge-${scenario.requiredDodge}`) {
+        this.pushTutorialFeedback("方向不对", `当前已知敌人下次攻击来自${scenario.requiredDodge === "right" ? "右" : "左"}侧。请按情报选择对应方向闪避。`);
+        return true;
+      }
+      this.setTutorialEnemyAttackDirection(enemy, scenario.requiredDodge ?? "right");
+      this.resolveActionRound(action, { type: "attack", mode: "melee" }, enemy);
+      if (!this.state.encounter) return true;
+      this.ensurePlayerAdvantageAtLeast(3);
+      this.setTutorialStep("enemy1-invest-tempo");
+      this.pushTutorialFeedback("优势变成资源", "正确闪避让你把优势攒到 3 点。接下来把 3 点全部投入速度，确保下一轮攻击能抢在高速敌人前面。");
+      return true;
+    }
+
+    if (scenario.stepId === "enemy1-kill") {
+      this.ensurePlayerSpeedBonusAtLeast(3);
+      this.resolveActionRound(action, { type: "attack", mode: "melee" }, enemy);
+      if (this.state.encounter && !enemy.defeated && enemy.hp > 0) {
+        this.ensurePlayerSpeedBonusAtLeast(3);
+        this.pushTutorialFeedback("继续追击", "你已经抢到先手并造成重伤。再进攻一次，结束这名低体质敌人。");
+      }
+      return true;
+    }
+
+    if (scenario.stepId === "enemy2-intel") {
+      this.resolveActionRound(action, { type: "attack", mode: "melee" }, enemy);
+      if (!this.state.encounter) return true;
+      this.revealEnemyStat(enemy, "defend", "intellect");
+      this.ensurePlayerAdvantageAtLeast(1);
+      this.setTutorialStep("enemy2-persuade");
+      this.pushTutorialFeedback("说服窗口", "这名敌人智力很低。你已经有 1 点优势，可以支付优势尝试说服，让对方休战并让路。");
+      return true;
+    }
+
+    this.pushTutorialBlockedInput(input);
+    return true;
+  }
+
+  private resolveTutorialContinueFight(choice: AdvantagePressChoice): void {
+    const scenario = this.state.tutorialScenario;
+    const encounter = this.state.encounter;
+    if (!scenario?.active || !encounter) return;
+    if (scenario.stepId !== "enemy1-invest-tempo" || choice !== "pressTempo") {
+      this.pushTutorialBlockedInput(choice);
+      return;
+    }
+    this.ensurePlayerAdvantageAtLeast(1);
+    if (!this.spendAdvantage("player")) {
+      this.pushTutorialFeedback("优势不足", "本步需要支付 1 点优势投入速度。");
+      return;
+    }
+    scenario.tempoInvested += 1;
+    const nextAmount = (encounter.playerBonusPool?.speed ?? 0) + 1;
+    encounter.playerBonusPool = { ...(encounter.playerBonusPool ?? {}), speed: nextAmount };
+    encounter.playerBonus = { target: "speed", amount: nextAmount };
+    encounter.phase = "chooseAction";
+    this.pushFeedback({
+      kind: "advantage-press",
+      title: "速度下注",
+      body: `你把 1 点优势投入速度。教学进度 ${scenario.tempoInvested}/3，下一次动作速度 +${nextAmount}。`,
+      tone: "advantage",
+      round: encounter.round,
+      durationMs: 1000
+    });
+    this.pushLog(`教程：你投入第 ${scenario.tempoInvested} 点优势到速度。`);
+    if (scenario.tempoInvested >= 3) {
+      this.setTutorialStep("enemy1-kill");
+      this.pushTutorialFeedback("抢先手", "3 点速度下注已经完成。现在进攻，你会先手命中并压掉敌人的后手。");
+    } else {
+      this.setTutorialStep("enemy1-invest-tempo");
+    }
+  }
+
+  private resolveTutorialPersuade(): void {
+    const scenario = this.state.tutorialScenario;
+    const encounter = this.state.encounter;
+    if (!scenario?.active || !encounter) return;
+    const enemy = this.getEncounterEnemy();
+    if (scenario.stepId !== "enemy2-persuade" || enemy.id !== TUTORIAL_ENEMY_TWO_ID) {
+      this.pushTutorialBlockedInput("persuade");
+      return;
+    }
+    this.ensurePlayerAdvantageAtLeast(1);
+    this.spendAdvantage("player");
+    enemy.neutralUntilTurn = this.state.turn + 99;
+    this.resetToStarterAfterTutorial("战斗教学完成", "下面在整个迷宫中找到出口，带着道具逃离吧。确认后进入开局选择。");
+  }
+
+  private chooseTutorialEnemyAction(enemy: ActorState): CombatAction {
+    if (enemy.id === TUTORIAL_ENEMY_TWO_ID) return { type: "attack", mode: "melee" };
+    return { type: "attack", mode: "melee" };
+  }
+
+  private handleTutorialEnemyDefeated(enemy: ActorState, encounter: { round: number; log: Array<{ text: string }> }, roundLogStart: number): boolean {
+    const scenario = this.state.tutorialScenario;
+    if (!scenario?.active || !isTutorialEnemyId(enemy.id)) return false;
+    this.pushCombatRoundFeedback(encounter, roundLogStart, "advantage", `训练击倒：${enemy.name}。`);
+    if (enemy.id === TUTORIAL_ENEMY_ONE_ID) {
+      this.endEncounter("第一名训练敌人倒下。下一名敌人用于学习说服。");
+      const secondEnemy = this.state.map.aiUnits.find((unit) => unit.id === TUTORIAL_ENEMY_TWO_ID);
+      if (secondEnemy) {
+        const nextPosition = this.findTutorialSpawn(this.state, this.state.player.position, 1, 1, []);
+        secondEnemy.position = { ...nextPosition };
+        secondEnemy.previousPosition = { ...nextPosition };
+        secondEnemy.awareness = { level: "aware", lastKnownPosition: { ...this.state.player.position }, source: "memory" };
+        this.setTutorialStep("enemy2-intel");
+        this.checkEncounter();
+        this.pushTutorialFeedback("第二名敌人", "现在练习另一种出口：先防御拿情报和优势，然后用优势支付说服。");
+      }
+    } else {
+      this.resetToStarterAfterTutorial("战斗教学完成", "下面在整个迷宫中找到出口，带着道具逃离吧。确认后进入开局选择。");
+    }
+    return true;
+  }
+
+  private setTutorialStep(stepId: TutorialStepId, requiredDodge?: "left" | "right"): void {
+    const scenario = this.state.tutorialScenario;
+    if (!scenario?.active) return;
+    configureTutorialStep(scenario, stepId, requiredDodge);
+  }
+
+  private setTutorialEnemyAttackDirection(enemy: ActorState, direction: "left" | "right"): void {
+    const encounter = this.state.encounter;
+    if (!encounter) return;
+    const attackIndex = encounter.attackDirectionIndex[enemy.id] ?? 0;
+    encounter.attackDirections[`${enemy.id}:${attackIndex}`] = direction;
+  }
+
+  private ensurePlayerAdvantageAtLeast(amount: number): void {
+    const encounter = this.state.encounter;
+    if (!encounter) return;
+    this.normalizeAdvantage(encounter.advantage);
+    encounter.advantage.playerPoints = Math.max(encounter.advantage.playerPoints, amount);
+    encounter.advantage.owner = "player";
+    encounter.advantage.source = "forced";
+    encounter.advantage.bonusAvailable = true;
+  }
+
+  private ensurePlayerSpeedBonusAtLeast(amount: number): void {
+    const encounter = this.state.encounter;
+    if (!encounter) return;
+    encounter.playerBonusPool = { ...(encounter.playerBonusPool ?? {}), speed: Math.max(encounter.playerBonusPool?.speed ?? 0, amount) };
+    encounter.playerBonus = { target: "speed", amount: encounter.playerBonusPool.speed ?? amount };
+  }
+
+  private pushTutorialBlockedInput(input: TutorialInput | undefined): void {
+    const scenario = this.state.tutorialScenario;
+    const current = scenario?.highlightedInput ? this.tutorialInputLabel(scenario.highlightedInput) : "高亮动作";
+    this.pushTutorialFeedback("当前步骤不需要这个动作", `请先使用：${current}。教程会把每个行为的意义拆开演示。`);
+  }
+
+  private tutorialInputLabel(input: TutorialInput): string {
+    if (input === "attack") return "进攻";
+    if (input === "defend") return "防御";
+    if (input === "dodge-left") return "左闪";
+    if (input === "dodge-right") return "右闪";
+    if (input === "pressPower") return "续战·力量";
+    if (input === "pressTempo") return "续战·节奏";
+    return "说服";
+  }
+
+  private pushTutorialFeedback(title: string, body: string): void {
+    this.pushFeedback({
+      kind: "tutorial",
+      title,
+      body,
+      tone: "intel",
+      durationMs: 1300
+    });
+  }
+
   private chooseEnemyAction(enemy: ActorState): CombatAction {
+    if (this.state.tutorialScenario?.active && isTutorialEnemyId(enemy.id)) return this.chooseTutorialEnemyAction(enemy);
     return chooseEnemyActionForState(this.state, enemy, (attacker, target) => this.canUsePistol(attacker, target));
   }
 
@@ -2483,6 +2862,7 @@ export class GameSimulation implements SimulationPort {
   }
 
   private collectEnemyDrops(enemy: ActorState): void {
+    if (isTutorialEnemyId(enemy.id)) return;
     const drops = collectEnemyDropsForEnemy(this.state, enemy, this.droppedEnemyIds);
     if (drops.length === 0) {
       const body = "未发现可回收道具";

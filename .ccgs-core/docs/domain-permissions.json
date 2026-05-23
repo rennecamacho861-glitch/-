@@ -1,0 +1,159 @@
+{
+  "domains": {
+    "global_directors": {
+      "agents": [
+        "technical-director",
+        "creative-director",
+        "producer",
+        "release-manager"
+      ],
+      "allowed_paths": [
+        "CCGS-Data/"
+      ]
+    },
+    "design": {
+      "agents": [
+        "lead-designer",
+        "game-designer",
+        "level-designer",
+        "economy-designer",
+        "systems-designer",
+        "live-ops-designer",
+        "prototyper"
+      ],
+      "allowed_paths": [
+        "CCGS-Data/design/",
+        "CCGS-Data/production/epics/"
+      ]
+    },
+    "gameplay_programming": {
+      "agents": [
+        "lead-programmer",
+        "gameplay-programmer",
+        "ai-programmer",
+        "tools-programmer",
+        "performance-analyst"
+      ],
+      "allowed_paths": [
+        "CCGS-Data/design/gdd/",
+        "CCGS-Data/production/epics/",
+        "CCGS-Data/project-docs/architecture/",
+        ".ccgs-core/rules/gameplay-code.md",
+        ".ccgs-core/rules/ai-code.md"
+      ]
+    },
+    "ui_ux": {
+      "agents": [
+        "art-director",
+        "ux-designer",
+        "ui-programmer",
+        "accessibility-specialist"
+      ],
+      "allowed_paths": [
+        "CCGS-Data/design/ux/",
+        "CCGS-Data/design/art/",
+        "CCGS-Data/production/epics/",
+        ".ccgs-core/rules/ui-code.md",
+        ".ccgs-core/rules/asset-pipeline.md"
+      ]
+    },
+    "art_tech_art": {
+      "agents": [
+        "tech-art-lead",
+        "technical-artist"
+      ],
+      "allowed_paths": [
+        "CCGS-Data/design/art/",
+        ".ccgs-core/rules/shader-code.md"
+      ]
+    },
+    "audio": {
+      "agents": [
+        "audio-director",
+        "sound-designer"
+      ],
+      "allowed_paths": [
+        "CCGS-Data/design/narrative/",
+        "CCGS-Data/design/gdd/"
+      ]
+    },
+    "narrative": {
+      "agents": [
+        "narrative-director",
+        "writer",
+        "world-builder"
+      ],
+      "allowed_paths": [
+        "CCGS-Data/design/narrative/",
+        "CCGS-Data/design/gdd/",
+        ".ccgs-core/rules/narrative.md"
+      ]
+    },
+    "backend_network": {
+      "agents": [
+        "network-programmer",
+        "devops-engineer",
+        "security-engineer",
+        "analytics-engineer",
+        "community-manager"
+      ],
+      "allowed_paths": [
+        "CCGS-Data/project-docs/architecture/",
+        ".ccgs-core/rules/network-code.md"
+      ]
+    },
+    "qa_testing": {
+      "agents": [
+        "qa-lead",
+        "qa-tester"
+      ],
+      "allowed_paths": [
+        "CCGS-Data/production/qa/",
+        "CCGS-Data/production/epics/",
+        "CCGS-Data/design/"
+      ]
+    },
+    "engine_unity": {
+      "agents": [
+        "unity-specialist",
+        "unity-dots-specialist",
+        "unity-shader-specialist",
+        "unity-addressables-specialist",
+        "unity-ui-specialist"
+      ],
+      "allowed_paths": [
+        "CCGS-Data/project-docs/engine-reference/unity/",
+        "CCGS-Data/project-docs/architecture/",
+        ".ccgs-core/rules/engine-code.md"
+      ]
+    },
+    "engine_unreal": {
+      "agents": [
+        "unreal-specialist",
+        "ue-gas-specialist",
+        "ue-blueprint-specialist",
+        "ue-replication-specialist",
+        "ue-umg-specialist"
+      ],
+      "allowed_paths": [
+        "CCGS-Data/project-docs/engine-reference/unreal/",
+        "CCGS-Data/project-docs/architecture/",
+        ".ccgs-core/rules/engine-code.md"
+      ]
+    },
+    "engine_godot": {
+      "agents": [
+        "godot-specialist",
+        "godot-gdscript-specialist",
+        "godot-shader-specialist",
+        "godot-gdextension-specialist",
+        "godot-csharp-specialist"
+      ],
+      "allowed_paths": [
+        "CCGS-Data/project-docs/engine-reference/godot/",
+        "CCGS-Data/project-docs/architecture/",
+        ".ccgs-core/rules/engine-code.md"
+      ]
+    }
+  }
+}

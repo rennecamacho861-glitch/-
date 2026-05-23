@@ -427,6 +427,34 @@ export type CombatAction =
   | { type: "ranged"; itemId: ItemId }
   | { type: "useItem"; itemId: ItemId };
 
+export type TutorialInput =
+  | "attack"
+  | "defend"
+  | "dodge-left"
+  | "dodge-right"
+  | AdvantagePressChoice
+  | "persuade";
+
+export type TutorialStepId =
+  | "enemy1-guard"
+  | "enemy1-direction-guard"
+  | "enemy1-dodge"
+  | "enemy1-invest-tempo"
+  | "enemy1-kill"
+  | "enemy2-intel"
+  | "enemy2-persuade";
+
+export type TutorialScenarioState = {
+  active: boolean;
+  stepId: TutorialStepId;
+  allowedInputs: TutorialInput[];
+  highlightedInput?: TutorialInput;
+  enemyIds: string[];
+  openingLoadoutDeferred: boolean;
+  tempoInvested: number;
+  requiredDodge?: "left" | "right";
+};
+
 export type AdvantageOwner = "player" | "enemy" | null;
 
 export type AdvantageState = {
@@ -555,7 +583,8 @@ export type FeedbackEvent = {
     | "item-use"
     | "item-reload"
     | "echo-pulse"
-    | "gunshot";
+    | "gunshot"
+    | "tutorial";
   title: string;
   body: string;
   tone: FeedbackTone;
@@ -582,6 +611,7 @@ export type GameState = {
     nodeId: string;
     itemIds: ItemId[];
   };
+  tutorialScenario?: TutorialScenarioState;
   encounter?: EncounterState;
   playerHiddenUntilTurn?: number;
   feedbackEvents: FeedbackEvent[];

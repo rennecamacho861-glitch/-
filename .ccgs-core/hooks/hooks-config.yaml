@@ -1,0 +1,59 @@
+# ============================================================================
+# hooks-config.yaml — 《照面之时》CCGS 校验配置
+# ============================================================================
+
+commit_message:
+  pattern: '^(feat|fix|docs|style|refactor|perf|test|chore|hotfix|epic)\(.+\): .+'
+
+gdd_validation:
+  path: "CCGS-Data/design/gdd/"
+  required_sections:
+    - "Overview"
+    - "Player Fantasy"
+    - "Detailed"
+    - "Formulas"
+    - "Edge Cases"
+    - "Dependencies"
+    - "Tuning Knobs"
+    - "Acceptance Criteria"
+
+data_files:
+  json_patterns:
+    - "*.json"
+    - "src/**/*.json"
+  yaml_patterns:
+    - ".ccgs-core/**/*.yaml"
+    - "CCGS-Data/**/*.yaml"
+
+asset_naming:
+  paths:
+    - "assets/"
+    - "public/"
+    - "src/assets/"
+  pattern: "^[a-z0-9_\\-]+\\.[a-z0-9]+$"
+
+push_protection:
+  protected_branches:
+    - "main"
+    - "master"
+    - "develop"
+
+rules_mapping:
+  - source: "gameplay-code.md"
+    target: "src/sim"
+  - source: "prototype-code.md"
+    target: "src/render"
+  - source: "ui-code.md"
+    target: "src"
+  - source: "design-docs.md"
+    target: "CCGS-Data/design/gdd"
+  - source: "test-standards.md"
+    target: "tests"
+
+workspace_status:
+  bug_tracker: "CCGS-Data/production/tracking/bug-tracker.md"
+  tech_debt: "CCGS-Data/production/tracking/tech-debt.md"
+  sprint_glob: "CCGS-Data/production/sprints/sprint-*.md"
+  session_state: "CCGS-Data/production/session-state/active.md"
+  status_markers: "🔴|🟡|Open|Blocked"
+

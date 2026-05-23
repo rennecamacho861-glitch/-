@@ -1,0 +1,18 @@
+{
+  "result": "PASS",
+  "sourceVersion": "grid-dungeon-audio-iter02-foley-bgm",
+  "assetCount": 102,
+  "eventCount": 64,
+  "buses": [
+    "ambient",
+    "combat",
+    "item",
+    "music",
+    "sfx",
+    "ui"
+  ],
+  "maxPeakSample": 29490,
+  "maxPeakDbfs": -0.92,
+  "failures": [],
+  "warnings": []
+}

@@ -1,0 +1,72 @@
+version: 2026-05-09
+project: "照面之时"
+source: "CCGS-Data/design/gdd/rulebook.md"
+requirements:
+  - id: TR-TEST-001
+    system: QA & Playtest Loop
+    text: "进入 v0.5 Logic / Integration 实装前保持自动化测试入口可运行。"
+    source_section: "rulebook.md#23-acceptance-criteria"
+  - id: TR-RUN-001
+    system: Run State
+    text: "一局可以在 5-10 分钟内完成进入迷宫、拾取构筑、至少一次遭遇、撤离或失败。"
+    source_section: "rulebook.md#23-acceptance-criteria"
+  - id: TR-RUN-002
+    system: Run State
+    text: "玩家站在出口格时可以撤离；生命为 0 时失败；没有固定生存回合上限，全局危险数值已删除。"
+    source_section: "rulebook.md#44-地图时间毒圈与撤离"
+  - id: TR-STATS-001
+    system: Actor Stats
+    text: "玩家和敌人都使用精神、智力、力量、速度、体质与同一套派生值公式。"
+    source_section: "rulebook.md#3-核心属性"
+  - id: TR-MAP-001
+    system: Map & Exploration
+    text: "玩家能识别俯视角格子地图、墙体、可见区、记忆区、未知区、道具节点、出口和 AI 单位。"
+    source_section: "rulebook.md#14-信息与-ui"
+  - id: TR-VISION-001
+    system: Vision & Intel
+    text: "视野领先可以产生开局优势；未见敌人远程先手必须给出来源提示。"
+    source_section: "rulebook.md#5-视野系统"
+  - id: TR-INTEL-001
+    system: Vision & Intel
+    text: "防御、躲闪、眼镜、陷阱等来源可以揭示敌人属性、道具或倾向信息。"
+    source_section: "rulebook.md#6-信息系统"
+  - id: TR-COMBAT-001
+    system: Encounter Combat
+    text: "照面战斗默认 2-4 个动作回合内出现优势窗口、击败、逃跑、说服或脱战。"
+    source_section: "rulebook.md#7-照面战斗框架"
+  - id: TR-COMBAT-002
+    system: Encounter Combat
+    text: "基础动作必须包含进攻、防御、左躲闪、右躲闪；远程、治疗等动作必须来自道具。"
+    source_section: "rulebook.md#8-基础动作"
+  - id: TR-COMBAT-003
+    system: Encounter Combat
+    text: "逃跑成功会拉开 1 格并脱战；说服成功至少能实现让路或交换信息。"
+    source_section: "rulebook.md#11-优势窗口"
+  - id: TR-ITEM-001
+    system: Item System
+    text: "手枪、绷带、长刀、陷阱、眼镜至少具备规则书定义的第一版效果。"
+    source_section: "rulebook.md#12-道具系统"
+  - id: TR-ITEM-002
+    system: Item System
+    text: "踩到道具节点会弹出 3 选 1，选择不额外推进回合，未选道具移除。"
+    source_section: "rulebook.md#12-道具系统"
+  - id: TR-ITEM-003
+    system: Item System
+    text: "敌人被击败后按 35%/最多 2 件/5% 额外掉落规则保留装备状态。"
+    source_section: "rulebook.md#12-道具系统"
+  - id: TR-AI-001
+    system: Enemy AI
+    text: "敌人属性生成符合预算，行为倾向由属性、生命、视野、优势和道具推导，不依赖固定种类。"
+    source_section: "rulebook.md#13-敌人与平衡"
+  - id: TR-AI-002
+    system: Enemy AI
+    text: "敌人会拾取未清空道具节点并清空节点，受持有上限与评分约束。"
+    source_section: "rulebook.md#13-敌人与平衡"
+  - id: TR-UI-001
+    system: HUD & Combat UI
+    text: "HUD 与战斗面板必须显示规则书第 14 章列出的关键信息。"
+    source_section: "rulebook.md#14-信息与-ui"
+  - id: TR-ARCH-001
+    system: Architecture
+    text: "`src/sim` 拥有规则和状态；`src/render` 只表现；`src/main.ts` 只做 HUD 与输入桥接。"
+    source_section: "rulebook.md#15-技术约束"
