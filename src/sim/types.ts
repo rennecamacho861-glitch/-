@@ -366,6 +366,10 @@ export type InventorySlot = {
   affix?: ItemAffix;
 };
 
+export type ProfileItemSlot = InventorySlot & {
+  instanceId: string;
+};
+
 export type ActorState = {
   id: string;
   name: string;
@@ -597,11 +601,86 @@ export type FeedbackEvent = {
   itemId?: ItemId;
 };
 
+export type ProfileStatBandId = "baseline" | "trained" | "hardened";
+
+export type MapTierId = "tier-1" | "tier-2" | "tier-3" | "tier-4" | "tier-5";
+
+export type RarityWeights = Record<ItemRarity, number>;
+
+export type MapTierDefinition = {
+  id: MapTierId;
+  name: string;
+  rank: number;
+  entryFee: number;
+  deploymentValueCap: number;
+  enemyStatTotalRange: [number, number];
+  enemyStatMax: number;
+  rarityWeights: RarityWeights;
+  naturalAffixChance: number;
+  mythicGemOfferChance: number;
+  extractionBonusGold: number;
+  lootGoldMultiplier: number;
+  enemyStartsWithEnchantedItem: boolean;
+  description: string;
+};
+
+export type ShopOffer = {
+  id: string;
+  slot: ProfileItemSlot;
+  price: number;
+  sold: boolean;
+};
+
+export type ShopState = {
+  refreshIndex: number;
+  offers: ShopOffer[];
+};
+
+export type RunSummary = {
+  runId: string;
+  tierId: MapTierId;
+  outcome: RunOutcome;
+  lootGold: number;
+  itemsRecovered: number;
+  itemsLost: number;
+};
+
+export type ProfileState = {
+  id: string;
+  gold: number;
+  stats: StatBlock;
+  statBandId: ProfileStatBandId;
+  stash: ProfileItemSlot[];
+  deployment: ProfileItemSlot[];
+  selectedMapTierId: MapTierId;
+  shop: ShopState;
+  runsCompleted: number;
+  nextInstanceSerial: number;
+  lastRunSummary?: RunSummary;
+};
+
+export type MetagameState = {
+  profile: ProfileState;
+  mapTiers: MapTierDefinition[];
+  activeRun: boolean;
+  selectedMapTier: MapTierDefinition;
+  deploymentValue: number;
+  canStartRun: boolean;
+  message?: string;
+};
+
 export type GameState = {
   seed: string;
   turn: number;
   turnLimit: number;
   loot: number;
+  naturalAffixChance?: number;
+  metagame?: {
+    mapTierId: MapTierId;
+    mapTierName: string;
+    entryFee: number;
+    deploymentValueCap: number;
+  };
   rareItemAppearances: Partial<Record<ItemId, number>>;
   player: ActorState;
   inventory: InventorySlot[];

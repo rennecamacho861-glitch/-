@@ -27,7 +27,8 @@ export function addItemToActor(state: GameState, actor: ActorState, itemId: Item
   const affix = rollNaturalItemAffix(
     state.seed,
     `${actor.id}-${state.turn}-${actor.inventory.length}-${actor.inventory.reduce((sum, slot) => sum + slot.count, 0)}`,
-    itemId
+    itemId,
+    state.naturalAffixChance
   );
   const slot = findStackableSlot(actor, itemId, affix);
   if (slot) {

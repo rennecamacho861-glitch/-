@@ -4,6 +4,10 @@ import { rollMythicGemItem } from "./enchantmentSystem";
 
 export type LootOfferSource = "map" | "airdrop";
 export type RareItemAppearanceCounts = Partial<Record<ItemId, number>>;
+export type ItemOfferOptions = {
+  rarityWeights?: Partial<Record<ItemRarity, number>>;
+  mythicGemChance?: number;
+};
 
 export const RARE_ITEM_MAX_APPEARANCES = 2;
 export const RARE_ITEM_DROP_CHANCE = 8;
@@ -209,12 +213,13 @@ export function createWeightedItemOffer(
   offerLabel: string,
   source: LootOfferSource = "map",
   rareItemAppearances?: RareItemAppearanceCounts,
-  maxRareAppearances = RARE_ITEM_MAX_APPEARANCES
+  maxRareAppearances = RARE_ITEM_MAX_APPEARANCES,
+  options: ItemOfferOptions = {}
 ): [ItemId, ItemId, ItemId] {
   if (pool.length < 3) throw new Error("Weighted loot offer requires at least three items.");
   const chosen: ItemId[] = [];
   for (let pickIndex = 0; pickIndex < 3; pickIndex += 1) {
-    const mythicItem = rollMythicGemItem(seed, `${offerLabel}-${source}-${pickIndex}`, chosen);
+    const mythicItem = rollMythicGemItem(seed, `${offerLabel}-${source}-${pickIndex}`, chosen, options.mythicGemChance);
     if (mythicItem && items[mythicItem] && !chosen.includes(mythicItem)) {
       chosen.push(mythicItem);
       continue;
@@ -228,11 +233,11 @@ export function createWeightedItemOffer(
     const availableRarities = (["common", "uncommon", "rare"] as ItemRarity[]).filter((rarity) =>
       candidates.some((itemId) => items[itemId].rarity === rarity)
     );
-    const totalWeight = availableRarities.reduce((sum, rarity) => sum + rarityWeight(source, rarity), 0);
+    const totalWeight = availableRarities.reduce((sum, rarity) => sum + offerRarityWeight(source, rarity, options), 0);
     let roll = hashInput(`${seed}-${offerLabel}-${source}-${pickIndex}-rarity`) % totalWeight;
     let selectedRarity = availableRarities[0];
     for (const rarity of availableRarities) {
-      roll -= rarityWeight(source, rarity);
+      roll -= offerRarityWeight(source, rarity, options);
       if (roll < 0) {
         selectedRarity = rarity;
         break;
@@ -252,6 +257,10 @@ export function createWeightedItemOffer(
     }
   }
   return chosen as [ItemId, ItemId, ItemId];
+}
+
+function offerRarityWeight(source: LootOfferSource, rarity: ItemRarity, options: ItemOfferOptions): number {
+  return options.rarityWeights?.[rarity] ?? rarityWeight(source, rarity);
 }
 
 function fallbackPowerScore(item: ItemDefinition): number {

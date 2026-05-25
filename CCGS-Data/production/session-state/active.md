@@ -1,5 +1,69 @@
 # Active Session State
 
+## Session Extract - /ux-design 2026-05-25 v0.9.5
+
+- Verdict: COMPLETE WITH NOTES
+- Topic: 局外行动入口窗口编排：地图和战备合并为主页入场前配置
+- Files changed: `src/main.ts`, `src/styles.css`, `CCGS-Data/design/gdd/metagame-shell-product-ui.md`, `CCGS-Data/design/gdd/systems-index.md`, `CCGS-Data/design/ux/metagame-entry-flow.md`, `CCGS-Data/production/changelogs/2026-05-25-v0-9-5-metagame-entry-flow-changelog.md`, `CCGS-Data/production/qa/reports/2026-05-25-v0-9-5-metagame-entry-flow-qa-report.md`
+- Implemented: 顶层局外导航改为 `行动 / 商店 / 仓库 / 档案`；地图档位和战备清单不再是独立页面，而是行动主页中的“大号关卡选择 + 入场检查”复合窗口；当前选中档位更大更显眼；开始行动、调整携带、购买补给仍走原有 `MetagamePort`，未改 `src/sim` 规则。
+- Validation: `npm run build` 通过；`npm test` 132/132 通过；本地 `http://127.0.0.1:5188/` 返回 200；`src/main.ts` 未残留旧 `map/loadout` 顶层入口。
+- Notes: 当前会话未暴露 Browser/Playwright 截图工具，本轮未补自动截图证据；发布前建议补桌面与移动端截图。
+
+## Session Extract - /map-systems + /design-system + /asset-spec + /asset-audit 2026-05-25 v0.9.4
+
+- Verdict: COMPLETE WITH NOTES
+- Topic: 玩法原型进入游戏外壳/元系统/产品化 UI，并接入 imagegen 局外 UI 资产
+- Files changed: `src/main.ts`, `src/styles.css`, `scripts/art/extract-metagame-ui-assets.ps1`, `public/assets/grid-dungeon/manifest.json`, `public/assets/grid-dungeon/ui/*.png`, `CCGS-Data/design/gdd/metagame-shell-product-ui.md`, `CCGS-Data/design/gdd/systems-index.md`, `CCGS-Data/design/ux/metagame-page-separation.md`, `CCGS-Data/design/ux/metagame-page-patterns-2026-05-25.md`, `CCGS-Data/design/art/metagame-ui-art-addendum-2026-05-25.md`, `CCGS-Data/design/assets/specs/metagame-shell-ui-assets-v0-9-4.md`, `CCGS-Data/design/assets/asset-manifest.md`, `CCGS-Data/production/changelogs/2026-05-25-v0-9-4-metagame-shell-product-ui-changelog.md`, `CCGS-Data/production/qa/reports/2026-05-25-v0-9-4-metagame-shell-ui-asset-audit-report.md`
+- Implemented: 新增 `Game Shell & Product UI` 系统 GDD；局外默认入口改为主页；局外导航扩展为主页、账号、地图、战备、商店、仓库；主页提供进入战备、购买补给、选择地图、训练教程入口；使用 imagegen 生成 UI 资产表并裁切成 10 个运行时 PNG；战备、商店、仓库、账号和地图页接入新 UI 装饰资产。
+- Validation: `scripts/art/validate-grid-assets.ps1` 通过；UI 资产尺寸与 alpha 检查通过；`npm run build` 通过；`npm test` 132/132 通过；`http://127.0.0.1:5188/` 返回 200。
+- Notes: 部分 imagegen 资产边缘存在轻微绿幕残边，当前作为暗色低透明 UI 装饰可接受；未自动保存浏览器截图证据，发布前建议补截图和压缩 hero PNG。
+
+## Session Extract - /ux-design + /team-ui + /art-bible 2026-05-25 v0.9.3
+
+- Verdict: COMPLETE
+- Topic: 局外大厅页面分区、账号密码 hook 与 UI 美术补充
+- Files changed: `src/main.ts`, `src/styles.css`, `CCGS-Data/design/ux/metagame-page-separation.md`, `CCGS-Data/design/ux/metagame-page-patterns-2026-05-25.md`, `CCGS-Data/design/art/metagame-ui-art-addendum-2026-05-25.md`, `CCGS-Data/production/changelogs/2026-05-25-v0-9-3-metagame-page-separation-changelog.md`, `CCGS-Data/production/qa/reports/2026-05-25-v0-9-3-metagame-page-separation-qa-report.md`
+- Implemented: 局外大厅拆分为账号、地图、战备、商店、仓库五个页面；顶部保留金币、地图、入场费、战备值和仓库数量摘要；账号页预留 `data-auth-hook` 与账号/密码输入；商店、仓库和战备物品 tooltip 保持可用；同页操作保留滚动位置，跨页切换不继承旧滚动位置。
+- Validation: `npm run build` 通过；`npm test` 132/132 通过；`git diff --check` 通过且仅有 CRLF 提示；`http://127.0.0.1:5188/` 返回 200。
+- Notes: 未接入真实账号、数据库或云存档；本轮未修改 `src/sim` 玩法规则。
+
+## Session Extract - /quick-ui 2026-05-25 v0.9.2
+
+- Verdict: COMPLETE
+- Topic: 局外商店/仓库/战备面板操作后保持滚动位置
+- Files changed: `src/main.ts`, `CCGS-Data/production/changelogs/2026-05-25-v0-9-2-metagame-scroll-preserve-changelog.md`
+- Implemented: `renderHud()` 重绘前保存 `.metagame-panel.is-lobby` 的 `scrollTop/scrollLeft`，重绘后恢复，避免购买、带入、卖出、撤下等操作把页面上拉到顶部。
+- Validation: `npm run build` 通过；`npm test` 132/132 通过。
+- Notes: 仅修 UI 滚动状态，未修改任何经济或战斗规则。
+
+## Session Extract - /quick-ui 2026-05-25 v0.9.1
+
+- Verdict: COMPLETE
+- Topic: 局外商店/仓库/战备物品悬浮说明
+- Files changed: `src/main.ts`, `src/styles.css`, `CCGS-Data/production/changelogs/2026-05-25-v0-9-1-metagame-item-tooltips-changelog.md`
+- Implemented: 商店、仓库、战备区物品卡增加 hover/focus tooltip，展示道具名称、稀有度、效果说明、使用限制、局外价格/战备值和附魔效果；卡片支持键盘聚焦查看。
+- Validation: `npm run build` 通过；`npm test` 132/132 通过。
+- Notes: 未修改道具规则、经济数值或战斗逻辑。
+
+## Session Extract - /implementation 2026-05-25 v0.9
+
+- Verdict: COMPLETE WITH NOTES
+- Topic: 局外 Profile、金币、商店、仓库、战备、五档地图与搜打撤结算实装
+- Files changed: `CCGS-Data/design/gdd/metagame-economy.md`, `CCGS-Data/design/gdd/rulebook.md`, `CCGS-Data/design/gdd/systems-index.md`, `CCGS-Data/project-docs/architecture/system-framework.md`, `CCGS-Data/project-docs/architecture/module-ports.md`, `src/sim/types.ts`, `src/sim/metagame.ts`, `src/sim/systems/mapTierSystem.ts`, `src/sim/GameSimulation.ts`, `src/sim/map.ts`, `src/sim/systems/enchantmentSystem.ts`, `src/sim/systems/itemBalanceSystem.ts`, `src/sim/systems/inventorySystem.ts`, `src/main.ts`, `src/styles.css`, `tests/unit/metagame_system.test.mjs`, `CCGS-Data/production/changelogs/2026-05-25-v0-9-metagame-economy-implementation-changelog.md`, `CCGS-Data/production/qa/reports/2026-05-25-v0-9-metagame-economy-qa-report.md`
+- Implemented: 本地 Profile 使用 `localStorage`；新账号 120 金币、属性 10-12、商店 6 槽、无限仓库、战备区、五档地图；安全撤离带回身上物品并获得金币；失败或主动放弃丢失携带物和本局所得；默认 `GameSimulation` 兼容旧测试，局外正式入场使用 `MetagameSimulation` 包装端口。
+- Validation: `npm run build` 通过；`npm test` 132/132 通过；`http://127.0.0.1:5188/` 返回 200。
+- Notes: 真实登录/数据库/云同步未做，符合用户本轮排除范围；战备区 UI 是首版可玩形态，后续建议补移动端截图、仓库筛选和经济调参。
+
+## Session Extract - /design-system + /proposal 2026-05-25 v0.9
+
+- Verdict: RULE + ARCHITECTURE DRAFT WRITTEN / AWAITING CONFIRMATION
+- Topic: 局外账号、仓库、商店、战备与五档地图搜打撤框架
+- Files changed: `CCGS-Data/design/gdd/metagame-economy.md`, `CCGS-Data/design/gdd/rulebook.md`, `CCGS-Data/design/gdd/systems-index.md`, `CCGS-Data/project-docs/architecture/system-framework.md`, `CCGS-Data/project-docs/architecture/module-ports.md`, `CCGS-Data/production/proposals/2026-05-25-v0-9-metagame-economy-proposal.md`, `CCGS-Data/production/changelogs/2026-05-25-v0-9-metagame-economy-rule-proposal-changelog.md`
+- Key rules: 首版账号为本地 Profile；新账号金币 120；属性档位为 10-12 / 12-15 / 15-20；可花金币重掷或升级；商店 6 槽按局刷新，出售完整道具实例；仓库保存道具实例，卖出获得 1/2 估值；五档地图拥有不同入场费、战备上限、敌人数值、掉落稀有度和附魔概率；当前难度定位为 Tier 2，敌人数值改为 10-20 波动；Tier 5 加入宝石掉落且敌人出生必带附魔物品。
+- Runtime: 未实装。确认前不得修改 `src/sim` / `src/main.ts` 的局外经济运行逻辑。
+- Open questions: 是否接受本地 Profile；失败是否丢失所有带入物；物价与卖出倍率是否确认；Tier 5 mythic 权重是否改为独立 1%-2% 宝石检定；仓库是否保持无容量上限。
+- Next recommended: 用户确认后创建 `v0-9-metagame-economy` Epic，并拆 Story 001-009。
+
 ## Session Extract - /quick-design + /combat-tweak 2026-05-23 v0.8.21
 
 - Verdict: COMPLETE

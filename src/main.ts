@@ -1,14 +1,14 @@
 ﻿import { itemIconUrl } from "./render/gridDungeonAssets";
-import { GameSimulation } from "./sim/GameSimulation";
+import { MetagameSimulation, createLocalProfileStorage, deploymentValueForSlot, priceForSlot, type MetagamePort } from "./sim/metagame";
 import { activeEffectUiText, itemEnchantmentUiText, itemEnemyCounter, itemUiDescription, itemUiLimit, statusEffectUiText } from "./sim/itemText";
 import { ITEMS } from "./sim/items";
 import { calculateDerivedStats } from "./sim/stats";
 import { enchantedItemName } from "./sim/systems/enchantmentSystem";
 import type { SimulationPort } from "./sim/ports";
-import type { ActiveEffect, CombatAction, FeedbackEvent, IntelEntry, InventorySlot, ItemId, ItemRarity, StatusEffect, TutorialInput } from "./sim/types";
+import type { ActiveEffect, CombatAction, FeedbackEvent, IntelEntry, InventorySlot, ItemId, ItemRarity, MapTierId, MetagameState, ProfileItemSlot, StatusEffect, TutorialInput } from "./sim/types";
 import "./styles.css";
 
-const simulation: SimulationPort = new GameSimulation(createRunSeed());
+const simulation: SimulationPort & Partial<MetagamePort> = new MetagameSimulation(createRunSeed(), createLocalProfileStorage("zhaomian-profile-v1"));
 let game: { destroy(removeCanvas: boolean): void } | undefined;
 
 void import("./render/startPhaserGame").then(({ startPhaserGame }) => {
@@ -37,6 +37,15 @@ let tutorialPreference: TutorialPreference | null = readTutorialPreference();
 let activeTutorial: TutorialMessage | undefined;
 const shownTutorialIds = new Set<string>();
 const shownScriptedTutorialSteps = new Set<string>();
+type MetagameView = "home" | "account" | "shop" | "stash";
+const metagameViews: Array<{ id: MetagameView; label: string; hint: string }> = [
+  { id: "home", label: "行动", hint: "地图/战备/出发" },
+  { id: "shop", label: "商店", hint: "购买补给" },
+  { id: "stash", label: "仓库", hint: "带入/出售" },
+  { id: "account", label: "档案", hint: "属性/账号" }
+];
+let activeMetagameView: MetagameView = "home";
+let lastRenderedMetagameView: MetagameView = activeMetagameView;
 
 const actionLabels = {
   attack: "进攻",
@@ -46,7 +55,10 @@ const actionLabels = {
 } as const;
 
 function renderHud(): void {
+  const preserveMetagameScroll = lastRenderedMetagameView === activeMetagameView;
+  const preservedMetagameScroll = preserveMetagameScroll ? readMetagameScroll() : undefined;
   const state = simulation.snapshot();
+  const meta = simulation.metaSnapshot?.();
   for (const event of state.feedbackEvents) {
     if (seenFeedbackIds.has(event.id)) continue;
     seenFeedbackIds.add(event.id);
@@ -197,11 +209,12 @@ function renderHud(): void {
     ? `<section class="outcome">
         <h2>${state.outcome.title}</h2>
         <p>${state.outcome.body}</p>
-        <button data-reset="true">再进一次迷宫</button>
+        <button data-reset="true">${meta ? "回到战备" : "再进一次迷宫"}</button>
       </section>`
     : "";
   const feedbackToast = activeFeedback ? feedbackToastMarkup(activeFeedback) : "";
-  const tutorialLayer = !activeFeedback ? tutorialLayerMarkup(state) : "";
+  const tutorialLayer = !activeFeedback && (!meta || meta.activeRun) ? tutorialLayerMarkup(state) : "";
+  const metagamePanel = meta ? metagamePanelMarkup(meta) : "";
 
   hud.innerHTML = `
     <main class="hud-shell">
@@ -209,9 +222,10 @@ function renderHud(): void {
       <section class="topbar">
         <div>
           <span class="eyebrow">照面之时</span>
-          <h1>黑暗迷宫原型</h1>
+          <h1>${meta ? "游戏外壳 / 战备终端" : "黑暗迷宫原型"}</h1>
         </div>
         <div class="stats">
+          ${meta ? `<span>金币 ${meta.profile.gold}</span><span>${escapeHtml(meta.selectedMapTier.name)}</span><span>战备 ${meta.deploymentValue}/${meta.selectedMapTier.deploymentValueCap}</span>` : ""}
           <span>时间 ${state.turn}/${state.turnLimit}</span>
           <span class="${healthFeedback.statClass}">生命 ${state.player.hp}/${playerMaxHp}</span>
           <span>战利 ${state.loot}</span>
@@ -222,6 +236,7 @@ function renderHud(): void {
           <span>体质 ${state.player.stats.constitution}</span>
         </div>
       </section>
+      ${metagamePanel}
       <section class="side-panel">
         <div class="panel-block inventory-panel">
           <h2>携带物</h2>
@@ -244,6 +259,8 @@ function renderHud(): void {
 
   const roundLog = hud.querySelector<HTMLOListElement>(".rounds");
   if (roundLog) roundLog.scrollTop = roundLog.scrollHeight;
+  restoreMetagameScroll(preservedMetagameScroll);
+  lastRenderedMetagameView = activeMetagameView;
 }
 
 hud.addEventListener("click", (event) => {
@@ -262,6 +279,11 @@ hud.addEventListener("click", (event) => {
   const pickupItem = button.dataset.pickup as ItemId | undefined;
   const special = button.dataset.special;
   const tutorialAction = button.dataset.tutorial;
+  const metaCommand = button.dataset.metaCommand;
+  if (metaCommand && handleMetagameAction(button, metaCommand)) {
+    renderHud();
+    return;
+  }
 
   if (tutorialAction) {
     handleTutorialAction(tutorialAction);
@@ -269,8 +291,9 @@ hud.addEventListener("click", (event) => {
     return;
   }
 
+  const meta = simulation.metaSnapshot?.();
   if (activeFeedback) return;
-  if (tutorialPreference === null || activeTutorial || scriptedTutorialBlocking(simulation.snapshot())) return;
+  if ((!meta || meta.activeRun) && (tutorialPreference === null || activeTutorial || scriptedTutorialBlocking(simulation.snapshot()))) return;
 
   if (command === "restart" || button.dataset.reset) {
     clearFeedbackToast();
@@ -289,6 +312,8 @@ hud.addEventListener("click", (event) => {
 });
 
 window.addEventListener("keydown", (event) => {
+  const meta = simulation.metaSnapshot?.();
+  if (meta && !meta.activeRun) return;
   if (simulation.snapshot().outcome) return;
   if (activeFeedback) return;
   if (tutorialPreference === null || activeTutorial || scriptedTutorialBlocking(simulation.snapshot())) return;
@@ -547,6 +572,349 @@ function clearFeedbackToast(): void {
   activeFeedback = undefined;
   feedbackQueue.length = 0;
   seenFeedbackIds.clear();
+}
+
+function readMetagameScroll(): { top: number; left: number } | undefined {
+  const panel = hud.querySelector<HTMLElement>(".metagame-panel.is-lobby");
+  return panel ? { top: panel.scrollTop, left: panel.scrollLeft } : undefined;
+}
+
+function restoreMetagameScroll(position: { top: number; left: number } | undefined): void {
+  if (!position) return;
+  const panel = hud.querySelector<HTMLElement>(".metagame-panel.is-lobby");
+  if (!panel) return;
+  panel.scrollTop = position.top;
+  panel.scrollLeft = position.left;
+}
+
+function handleMetagameAction(button: HTMLButtonElement, command: string): boolean {
+  const metaPort = simulation as Partial<MetagamePort>;
+  if (!metaPort.metaSnapshot) return false;
+  if (command === "set-meta-view") {
+    const nextView = button.dataset.metaView;
+    if (isMetagameView(nextView)) activeMetagameView = nextView;
+    return true;
+  }
+  if (command === "select-tier") metaPort.selectMapTier?.(button.dataset.tierId as MapTierId);
+  if (command === "start-run") {
+    if (tutorialPreference === null) {
+      tutorialPreference = "off";
+      writeTutorialPreference("off");
+    }
+    clearFeedbackToast();
+    metaPort.startRun?.(createRunSeed());
+  }
+  if (command === "tutorial-run") {
+    tutorialPreference = "on";
+    writeTutorialPreference("on");
+    clearFeedbackToast();
+    shownScriptedTutorialSteps.clear();
+    metaPort.beginTutorialScenario?.();
+  }
+  if (command === "buy-shop") metaPort.buyShopOffer?.(button.dataset.offerId ?? "");
+  if (command === "refresh-shop") metaPort.refreshShop?.();
+  if (command === "equip-stash") metaPort.equipStashSlot?.(button.dataset.slotId ?? "");
+  if (command === "unequip-deploy") metaPort.unequipDeploymentSlot?.(button.dataset.slotId ?? "");
+  if (command === "sell-stash") metaPort.sellStashSlot?.(button.dataset.slotId ?? "");
+  if (command === "reroll-stats") metaPort.rerollProfileStats?.();
+  if (command === "upgrade-stats") metaPort.upgradeProfileStats?.();
+  return true;
+}
+
+function isMetagameView(value: string | undefined): value is MetagameView {
+  return value === "home" || value === "account" || value === "shop" || value === "stash";
+}
+
+function metagamePanelMarkup(meta: MetagameState): string {
+  const profile = meta.profile;
+  const statTotal = Object.values(profile.stats).reduce((sum, value) => sum + value, 0);
+  const summary = profile.lastRunSummary
+    ? `<p class="meta-summary">${profile.lastRunSummary.outcome === "extracted" ? "上局撤离" : "上局失败"}：回收 ${profile.lastRunSummary.itemsRecovered} 件，丢失 ${profile.lastRunSummary.itemsLost} 件，金币 +${profile.lastRunSummary.lootGold}</p>`
+    : "";
+  const nav = metagameViews
+    .map(
+      (view) => `<button data-meta-command="set-meta-view" data-meta-view="${view.id}" class="${view.id === activeMetagameView ? "is-active" : ""}" aria-pressed="${view.id === activeMetagameView}">
+        <strong>${view.label}</strong>
+        <small>${view.hint}</small>
+      </button>`
+    )
+    .join("");
+
+  if (meta.activeRun) {
+    return `<section class="metagame-panel is-compact">
+      <strong>${escapeHtml(meta.selectedMapTier.name)}</strong>
+      <span>金币 ${profile.gold}</span>
+      <span>撤离成功才会带回身上物品；失败会丢失携带物和本局所得。</span>
+    </section>`;
+  }
+
+  return `<section class="metagame-panel is-lobby view-${activeMetagameView}" role="dialog" aria-label="战备区">
+    <div class="meta-header">
+      <div>
+        <span class="eyebrow">局外战备</span>
+        <h2>${escapeHtml(metagameViewTitle(activeMetagameView))}</h2>
+      </div>
+      <strong>${profile.gold} 金币</strong>
+    </div>
+    <nav class="meta-nav" aria-label="局外页面">${nav}</nav>
+    <div class="meta-profile-strip">
+      <span>属性总值 ${statTotal}</span>
+      <span>地图 ${escapeHtml(meta.selectedMapTier.name)}</span>
+      <span>入场费 ${meta.selectedMapTier.entryFee}</span>
+      <span>战备 ${meta.deploymentValue}/${meta.selectedMapTier.deploymentValueCap}</span>
+      <span>仓库 ${profile.stash.length}</span>
+    </div>
+    ${meta.message ? `<p class="meta-message">${escapeHtml(meta.message)}</p>` : ""}
+    ${summary}
+    <div class="meta-view">${metagameViewMarkup(meta, statTotal)}</div>
+  </section>`;
+}
+
+function metagameViewTitle(view: MetagameView): string {
+  if (view === "home") return "行动选择";
+  if (view === "account") return "档案、属性与账号预留";
+  if (view === "shop") return "购买与刷新补给";
+  return "仓库管理";
+}
+
+function metagameViewMarkup(meta: MetagameState, statTotal: number): string {
+  if (activeMetagameView === "home") return metagameHomeView(meta);
+  if (activeMetagameView === "account") return metagameAccountView(meta, statTotal);
+  if (activeMetagameView === "shop") return metagameShopView(meta);
+  if (activeMetagameView === "stash") return metagameStashView(meta);
+  return metagameHomeView(meta);
+}
+
+function metagameHomeView(meta: MetagameState): string {
+  const profile = meta.profile;
+  const lastRun = profile.lastRunSummary
+    ? `${profile.lastRunSummary.outcome === "extracted" ? "上次撤离成功" : "上次行动失败"} · 回收 ${profile.lastRunSummary.itemsRecovered} 件 · 金币 +${profile.lastRunSummary.lootGold}`
+    : "还没有行动记录";
+  const deployment = profile.deployment.map((slot) => deploymentSlotCard(slot, meta.activeRun)).join("");
+  const loadoutState = meta.canStartRun ? "可以进场" : "金币不足或战备超限";
+  const tiers = meta.mapTiers
+    .map(
+      (tier) => `<button data-meta-command="select-tier" data-tier-id="${tier.id}" class="${tier.id === profile.selectedMapTierId ? "is-selected" : ""}" ${meta.activeRun ? "disabled" : ""} title="${escapeHtml(tier.description)}">
+        <strong>${escapeHtml(tier.name)}</strong>
+        <small>入场 ${tier.entryFee} / 战备 ${tier.deploymentValueCap} / 敌人 ${tier.enemyStatTotalRange[0]}-${tier.enemyStatTotalRange[1]}</small>
+        <span>${escapeHtml(tier.description)}</span>
+      </button>`
+    )
+    .join("");
+  return `<section class="meta-section meta-home-view">
+    <div class="meta-hero">
+      <span class="meta-brand-mark" aria-hidden="true"></span>
+      <div class="meta-hero-copy">
+        <span class="eyebrow">黑暗迷宫搜打撤</span>
+        <h3>照面之时</h3>
+        <p>带着有限战备进入无视野迷宫，拾取道具、判断敌人、短促交锋，然后找到出口把战利带回来。</p>
+      </div>
+    </div>
+    <div class="meta-home-entry-grid">
+      <section class="meta-entry-window meta-map-window">
+        <div class="meta-section-head">
+          <div>
+            <h3>选择行动区域</h3>
+            <p>关卡档位是本页最重要的决定：它决定入场费、可携带战备上限、敌人数值、掉落稀有度和附魔机会。</p>
+          </div>
+          <span class="meta-pill">当前 ${escapeHtml(meta.selectedMapTier.name)}</span>
+        </div>
+        <div class="tier-list is-entry">${tiers}</div>
+      </section>
+      <aside class="meta-entry-window meta-launch-window">
+        <div class="meta-section-head">
+          <div>
+            <h3>入场检查 <small>${meta.deploymentValue}/${meta.selectedMapTier.deploymentValueCap}</small></h3>
+            <p>战备是进入前的临门选择。失败会丢失携带物；撤离成功才会带回。</p>
+          </div>
+          <span class="meta-pill">${loadoutState}</span>
+        </div>
+        <div class="meta-loadout-summary">
+          <span>地图：${escapeHtml(meta.selectedMapTier.name)}</span>
+          <span>入场费：${meta.selectedMapTier.entryFee}</span>
+          <span>金币：${profile.gold}</span>
+        </div>
+        <div class="meta-item-list meta-entry-loadout">${deployment || "<p>还没有带入物品。去仓库选择要冒险带入的装备。</p>"}</div>
+        <div class="meta-actions meta-action-row">
+          <button class="start-run-button meta-primary-cta" data-meta-command="start-run" ${meta.canStartRun ? "" : "disabled"}>支付入场费并开始</button>
+          <button data-meta-command="set-meta-view" data-meta-view="stash">调整携带</button>
+          <button data-meta-command="set-meta-view" data-meta-view="shop">购买补给</button>
+        </div>
+      </aside>
+    </div>
+    <div class="meta-home-grid">
+      <article>
+        <strong>当前目标</strong>
+        <span>进场 → 搜刮/交战 → 找出口撤离</span>
+      </article>
+      <article>
+        <strong>当前档位</strong>
+        <span>${escapeHtml(meta.selectedMapTier.name)} · 入场 ${meta.selectedMapTier.entryFee}</span>
+      </article>
+      <article>
+        <strong>战备状态</strong>
+        <span>${meta.deploymentValue}/${meta.selectedMapTier.deploymentValueCap} · ${meta.canStartRun ? "可出发" : "需调整"}</span>
+      </article>
+      <article>
+        <strong>档案记录</strong>
+        <span>${escapeHtml(lastRun)}</span>
+      </article>
+    </div>
+    <div class="meta-home-actions">
+      <button data-meta-command="tutorial-run">训练教程</button>
+      <button data-meta-command="set-meta-view" data-meta-view="account">查看属性</button>
+      <button data-meta-command="set-meta-view" data-meta-view="shop">补给商店</button>
+      <button data-meta-command="set-meta-view" data-meta-view="stash">仓库整备</button>
+    </div>
+  </section>`;
+}
+
+function metagameAccountView(meta: MetagameState, statTotal: number): string {
+  const profile = meta.profile;
+  return `<section class="meta-section meta-account-view">
+    <div class="meta-section-head">
+      <div>
+        <h3>本地档案</h3>
+        <p>当前版本使用本地存档；账号和密码输入已预留给后续云端账号接入。</p>
+      </div>
+      <span class="meta-pill">ID ${escapeHtml(profile.id)}</span>
+    </div>
+    <form class="auth-hook-form" data-auth-hook="profile-auth">
+      <label>
+        <span>账号</span>
+        <input data-auth-field="account" name="account" autocomplete="username" placeholder="后续账号名 / 邮箱" />
+      </label>
+      <label>
+        <span>密码</span>
+        <input data-auth-field="password" name="password" type="password" autocomplete="current-password" placeholder="后续密码" />
+      </label>
+      <div class="auth-hook-actions">
+        <button type="button" data-auth-hook="login" disabled>登录预留</button>
+        <button type="button" data-auth-hook="register" disabled>注册预留</button>
+      </div>
+    </form>
+    <div class="meta-section-head">
+      <div>
+        <h3>角色属性 <small>总值 ${statTotal}</small></h3>
+        <p>属性决定视野、情报、伤害、先后手、逃跑、说服与生命承压。</p>
+      </div>
+      <span class="meta-pill">${escapeHtml(statBandLabel(profile.statBandId))}</span>
+    </div>
+    <div class="meta-stats">
+      <span><strong>精神</strong>${profile.stats.spirit}<small>视野/掉落感知</small></span>
+      <span><strong>智力</strong>${profile.stats.intellect}<small>情报/说服</small></span>
+      <span><strong>力量</strong>${profile.stats.strength}<small>伤害/同速</small></span>
+      <span><strong>速度</strong>${profile.stats.speed}<small>先手/闪避</small></span>
+      <span><strong>体质</strong>${profile.stats.constitution}<small>生命/重伤</small></span>
+    </div>
+    <div class="meta-actions">
+      <button data-meta-command="reroll-stats">重Roll属性</button>
+      <button data-meta-command="upgrade-stats">升级总值档</button>
+      <button data-meta-command="tutorial-run">训练教程</button>
+    </div>
+  </section>`;
+}
+
+function metagameShopView(meta: MetagameState): string {
+  const shop = meta.profile.shop.offers.map((offer) => shopOfferCard(offer, meta.activeRun)).join("");
+  return `<section class="meta-section meta-shop-view">
+    <div class="meta-section-head">
+      <div>
+        <h3>商店</h3>
+        <p>商店价格按稀有度与附魔提高；买到的物品进入仓库。</p>
+      </div>
+      <span class="meta-pill">金币 ${meta.profile.gold}</span>
+    </div>
+    <div class="meta-item-list">${shop}</div>
+    <div class="meta-actions">
+      <button data-meta-command="refresh-shop">刷新商店</button>
+    </div>
+  </section>`;
+}
+
+function metagameStashView(meta: MetagameState): string {
+  const stash = meta.profile.stash.map((slot) => stashSlotCard(slot, meta.activeRun)).join("");
+  return `<section class="meta-section meta-stash-view">
+    <div class="meta-section-head">
+      <div>
+        <h3>仓库 <small>${meta.profile.stash.length} 件</small></h3>
+        <p>仓库无上限。卖出获得半价金币；带入后失败会丢失。</p>
+      </div>
+      <span class="meta-pill">战备 ${meta.deploymentValue}/${meta.selectedMapTier.deploymentValueCap}</span>
+    </div>
+    <div class="meta-item-list">${stash || "<p>仓库空着。撤离成功会把身上物品放进来。</p>"}</div>
+  </section>`;
+}
+
+function shopOfferCard(offer: MetagameState["profile"]["shop"]["offers"][number], activeRun: boolean): string {
+  return `<article class="meta-item-card ${offer.sold ? "is-sold" : ""}" data-rarity="${offer.slot.item.rarity}"${enchantmentDataAttr(offer.slot)} tabindex="0">
+    ${profileSlotIconMarkup(offer.slot)}
+    <div>
+      <strong>${escapeHtml(enchantedItemName(offer.slot))}</strong>
+      <small>${escapeHtml(rarityLabel(offer.slot.item.rarity))} / ${offer.price} 金币 / 战备值 ${deploymentValueForSlot(offer.slot)}</small>
+    </div>
+    <button data-meta-command="buy-shop" data-offer-id="${offer.id}" ${activeRun || offer.sold ? "disabled" : ""}>${offer.sold ? "已售" : "购买"}</button>
+    ${profileSlotTooltipMarkup(offer.slot, `售价 ${offer.price} 金币；战备值 ${deploymentValueForSlot(offer.slot)}`)}
+  </article>`;
+}
+
+function stashSlotCard(slot: ProfileItemSlot, activeRun: boolean): string {
+  return `<article class="meta-item-card" data-rarity="${slot.item.rarity}"${enchantmentDataAttr(slot)} tabindex="0">
+    ${profileSlotIconMarkup(slot)}
+    <div>
+      <strong>${escapeHtml(enchantedItemName(slot))}</strong>
+      <small>${escapeHtml(slotRuntimeText(slot, 0))} / 售价 ${Math.floor(priceForSlot(slot) / 2)}</small>
+    </div>
+    <span class="meta-card-actions">
+      <button data-meta-command="equip-stash" data-slot-id="${slot.instanceId}" ${activeRun ? "disabled" : ""}>带入</button>
+      <button data-meta-command="sell-stash" data-slot-id="${slot.instanceId}" ${activeRun ? "disabled" : ""}>卖</button>
+    </span>
+    ${profileSlotTooltipMarkup(slot, `卖出获得 ${Math.floor(priceForSlot(slot) / 2)} 金币；带入价值 ${deploymentValueForSlot(slot)}`)}
+  </article>`;
+}
+
+function deploymentSlotCard(slot: ProfileItemSlot, activeRun: boolean): string {
+  return `<article class="meta-item-card" data-rarity="${slot.item.rarity}"${enchantmentDataAttr(slot)} tabindex="0">
+    ${profileSlotIconMarkup(slot)}
+    <div>
+      <strong>${escapeHtml(enchantedItemName(slot))}</strong>
+      <small>战备值 ${deploymentValueForSlot(slot)}；失败会丢失</small>
+    </div>
+    <button data-meta-command="unequip-deploy" data-slot-id="${slot.instanceId}" ${activeRun ? "disabled" : ""}>撤下</button>
+    ${profileSlotTooltipMarkup(slot, `战备值 ${deploymentValueForSlot(slot)}；失败会丢失，撤离成功会回仓库`)}
+  </article>`;
+}
+
+function statBandLabel(bandId: MetagameState["profile"]["statBandId"]): string {
+  if (bandId === "baseline") return "拾荒者 10-12";
+  if (bandId === "trained") return "熟手 12-15";
+  return "硬牌 15-20";
+}
+
+function profileSlotIconMarkup(slot: ProfileItemSlot): string {
+  const iconUrl = itemIconUrl(slot.item.id);
+  const charges = slot.charges !== undefined ? `<small>${slot.charges}</small>` : slot.count > 1 ? `<small>x${slot.count}</small>` : "";
+  const icon = iconUrl
+    ? `<img class="tool-icon" src="${iconUrl}" alt="" aria-hidden="true">`
+    : `<span class="tool-icon tool-icon-fallback" aria-hidden="true">${escapeHtml(slot.item.category.slice(0, 1).toUpperCase())}</span>`;
+  return `<span class="meta-item-icon">${icon}${charges}</span>`;
+}
+
+function profileSlotTooltipMarkup(slot: ProfileItemSlot, economyText: string): string {
+  const description = itemUiDescription(slot.item.id);
+  const limit = slotRuntimeText(slot, 0);
+  const enchantmentText = itemEnchantmentUiText(slot);
+  return `<span class="meta-item-tooltip" role="tooltip">
+    <strong>${escapeHtml(enchantedItemName(slot))} · ${escapeHtml(rarityLabel(slot.item.rarity))}</strong>
+    <span class="tool-hint">${escapeHtml(description)}</span>
+    <span class="tool-limit">${escapeHtml(limit)}</span>
+    <span class="tool-limit">${escapeHtml(economyText)}</span>
+    ${enchantmentText ? `<span class="tool-enchantment">${escapeHtml(enchantmentText)}</span>` : ""}
+  </span>`;
+}
+
+function enchantmentDataAttr(slot: Pick<InventorySlot, "affix">): string {
+  return slot.affix?.kind === "enchantment" ? ` data-enchantment="${slot.affix.enchantment}"` : "";
 }
 
 function itemName(itemId: ItemId): string {

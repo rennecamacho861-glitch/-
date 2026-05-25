@@ -1,4 +1,4 @@
-import { ALL_ITEM_IDS, ITEMS, createInventorySlot } from "./items";
+import { ALL_ITEM_IDS, ITEMS, cloneInventorySlot, createInventorySlot } from "./items";
 import { itemEnchantmentUiText, itemUiDescription } from "./itemText";
 import { directionFromDelta, directionLabel, distance, isSamePosition, createMap } from "./map";
 import type { SimulationListener, SimulationPort, Unsubscribe } from "./ports";
@@ -81,7 +81,9 @@ import type {
   InventorySlot,
   ItemAffix,
   ItemId,
+  MapTierDefinition,
   Position,
+  StatBlock,
   StatKey,
   StatusEffectType,
   TutorialInput,
@@ -120,6 +122,14 @@ type RangedHitResult = CombatHitResult & {
 type EnchantmentSource = {
   sourceItemId: ItemId;
   enchantment: EnchantmentKind;
+};
+
+export type GameSimulationOptions = {
+  starterOffer?: boolean;
+  playerStats?: StatBlock;
+  initialInventory?: InventorySlot[];
+  mapTier?: MapTierDefinition;
+  naturalAffixChance?: number;
 };
 
 const STAT_LABELS: Record<StatKey, string> = {
@@ -169,7 +179,7 @@ export class GameSimulation implements SimulationPort {
   private ambushedEnemyIds = new Set<string>();
   private droppedEnemyIds = new Set<string>();
 
-  constructor(private seed: string) {
+  constructor(private seed: string, private options: GameSimulationOptions = {}) {
     this.state = this.createInitialState();
     this.updateVisibility();
   }
@@ -594,7 +604,9 @@ export class GameSimulation implements SimulationPort {
   }
 
   private createInitialState(options: { starterOffer?: boolean } = {}): GameState {
-    const { map, playerStart, rareItemAppearances } = createMap(this.seed);
+    const { map, playerStart, rareItemAppearances } = createMap(this.seed, { mapTier: this.options.mapTier });
+    const playerStats = { ...(this.options.playerStats ?? DEFAULT_PLAYER_STATS) };
+    const initialInventory = (this.options.initialInventory ?? []).map((slot) => cloneInventorySlot(slot));
     const player: ActorState = {
       id: "player",
       name: "玩家",
@@ -602,25 +614,35 @@ export class GameSimulation implements SimulationPort {
       position: { ...playerStart },
       previousPosition: { ...playerStart },
       facing: "east",
-      stats: { ...DEFAULT_PLAYER_STATS },
-      hp: calculateDerivedStats(DEFAULT_PLAYER_STATS).maxHp,
+      stats: playerStats,
+      hp: calculateDerivedStats(playerStats).maxHp,
       combatCount: 0,
-      inventory: [],
+      inventory: initialInventory,
       defeated: false,
       awareness: { level: "visible" }
     };
+    const starterOffer = options.starterOffer ?? this.options.starterOffer;
 
     return {
       seed: this.seed,
       turn: 0,
       turnLimit: TURN_LIMIT,
       loot: 0,
+      naturalAffixChance: this.options.naturalAffixChance ?? this.options.mapTier?.naturalAffixChance,
+      metagame: this.options.mapTier
+        ? {
+            mapTierId: this.options.mapTier.id,
+            mapTierName: this.options.mapTier.name,
+            entryFee: this.options.mapTier.entryFee,
+            deploymentValueCap: this.options.mapTier.deploymentValueCap
+          }
+        : undefined,
       rareItemAppearances,
       player,
       inventory: player.inventory,
       intel: [],
       map,
-      pendingPickupOffer: options.starterOffer === false ? undefined : { nodeId: "starter", itemIds: ["echo", "pistol", "bandage", "photon-cut"] },
+      pendingPickupOffer: starterOffer === false ? undefined : { nodeId: "starter", itemIds: ["echo", "pistol", "bandage", "photon-cut"] },
       feedbackEvents: [],
       log: ["你在牌桌般安静的迷宫里醒来。"]
     };

@@ -1,0 +1,162 @@
+﻿[
+    {
+        "id":  "ui-shell-hero-bg",
+        "category":  "ui",
+        "file":  "ui/ui-shell-hero-bg.png",
+        "sourceImage":  "CCGS-Data/design/art/source/metagame-ui/metagame-ui-shell-iter01.png",
+        "sourceRect":  {
+                           "y":  34,
+                           "w":  1232,
+                           "h":  430,
+                           "x":  30
+                       },
+        "outputSize":  {
+                           "h":  448,
+                           "w":  1280
+                       }
+    },
+    {
+        "id":  "ui-tab-active",
+        "category":  "ui",
+        "file":  "ui/ui-tab-active.png",
+        "sourceImage":  "CCGS-Data/design/art/source/metagame-ui/metagame-ui-shell-iter01.png",
+        "sourceRect":  {
+                           "y":  506,
+                           "w":  414,
+                           "h":  106,
+                           "x":  32
+                       },
+        "outputSize":  {
+                           "h":  96,
+                           "w":  360
+                       }
+    },
+    {
+        "id":  "ui-tab-idle",
+        "category":  "ui",
+        "file":  "ui/ui-tab-idle.png",
+        "sourceImage":  "CCGS-Data/design/art/source/metagame-ui/metagame-ui-shell-iter01.png",
+        "sourceRect":  {
+                           "y":  506,
+                           "w":  370,
+                           "h":  106,
+                           "x":  482
+                       },
+        "outputSize":  {
+                           "h":  96,
+                           "w":  360
+                       }
+    },
+    {
+        "id":  "ui-shop-header",
+        "category":  "ui",
+        "file":  "ui/ui-shop-header.png",
+        "sourceImage":  "CCGS-Data/design/art/source/metagame-ui/metagame-ui-shell-iter01.png",
+        "sourceRect":  {
+                           "y":  520,
+                           "w":  594,
+                           "h":  104,
+                           "x":  892
+                       },
+        "outputSize":  {
+                           "h":  112,
+                           "w":  640
+                       }
+    },
+    {
+        "id":  "ui-loadout-crate",
+        "category":  "ui",
+        "file":  "ui/ui-loadout-crate.png",
+        "sourceImage":  "CCGS-Data/design/art/source/metagame-ui/metagame-ui-shell-iter01.png",
+        "sourceRect":  {
+                           "y":  668,
+                           "w":  426,
+                           "h":  184,
+                           "x":  30
+                       },
+        "outputSize":  {
+                           "h":  224,
+                           "w":  512
+                       }
+    },
+    {
+        "id":  "ui-stash-locker",
+        "category":  "ui",
+        "file":  "ui/ui-stash-locker.png",
+        "sourceImage":  "CCGS-Data/design/art/source/metagame-ui/metagame-ui-shell-iter01.png",
+        "sourceRect":  {
+                           "y":  688,
+                           "w":  504,
+                           "h":  158,
+                           "x":  484
+                       },
+        "outputSize":  {
+                           "h":  176,
+                           "w":  560
+                       }
+    },
+    {
+        "id":  "ui-panel-frame-wide",
+        "category":  "ui",
+        "file":  "ui/ui-panel-frame-wide.png",
+        "sourceImage":  "CCGS-Data/design/art/source/metagame-ui/metagame-ui-shell-iter01.png",
+        "sourceRect":  {
+                           "y":  680,
+                           "w":  500,
+                           "h":  172,
+                           "x":  1004
+                       },
+        "outputSize":  {
+                           "h":  192,
+                           "w":  560
+                       }
+    },
+    {
+        "id":  "ui-brand-mark",
+        "category":  "ui",
+        "file":  "ui/ui-brand-mark.png",
+        "sourceImage":  "CCGS-Data/design/art/source/metagame-ui/metagame-ui-shell-iter01.png",
+        "sourceRect":  {
+                           "y":  878,
+                           "w":  116,
+                           "h":  116,
+                           "x":  30
+                       },
+        "outputSize":  {
+                           "h":  96,
+                           "w":  96
+                       }
+    },
+    {
+        "id":  "ui-divider-strip",
+        "category":  "ui",
+        "file":  "ui/ui-divider-strip.png",
+        "sourceImage":  "CCGS-Data/design/art/source/metagame-ui/metagame-ui-shell-iter01.png",
+        "sourceRect":  {
+                           "y":  928,
+                           "w":  812,
+                           "h":  32,
+                           "x":  176
+                       },
+        "outputSize":  {
+                           "h":  28,
+                           "w":  640
+                       }
+    },
+    {
+        "id":  "ui-button-plate",
+        "category":  "ui",
+        "file":  "ui/ui-button-plate.png",
+        "sourceImage":  "CCGS-Data/design/art/source/metagame-ui/metagame-ui-shell-iter01.png",
+        "sourceRect":  {
+                           "y":  890,
+                           "w":  290,
+                           "h":  90,
+                           "x":  1018
+                       },
+        "outputSize":  {
+                           "h":  96,
+                           "w":  320
+                       }
+    }
+]

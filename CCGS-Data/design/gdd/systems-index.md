@@ -4,6 +4,8 @@
 
 | System | Layer | Priority | Status | Design Doc | Notes |
 |---|---|---|---|---|---|
+| Metagame Economy | Foundation | v0.9 | Draft | `metagame-economy.md`, `rulebook.md`, `system-framework.md` | 账号、金币、属性 roll、仓库、商店、战备、地图档位、撤离回收 |
+| Game Shell & Product UI | Presentation | v0.9.5 | Designed | `metagame-shell-product-ui.md`, `metagame-entry-flow.md`, `metagame-page-separation.md`, `metagame-page-patterns-2026-05-25.md` | 行动主页、入场前地图/战备配置、商店/仓库/档案辅助页、账号密码 hook、UI 美术资产接入 |
 | Run State | Foundation | MVP | Designed | `rulebook.md`, `system-framework.md` | 局内时间、撤离、失败、可复现 seed |
 | Map & Exploration | Core | MVP | Designed | `rulebook.md`, `system-framework.md` | 格子地图、道具节点、出口、遭遇触发 |
 | Vision & Intel | Core | MVP | Designed | `rulebook.md`, `system-framework.md` | 视野、察觉、信息层级、视野领先 |
@@ -16,21 +18,24 @@
 
 ## Dependency Order
 
-1. Run State
-2. Actor Stats
-3. Map & Exploration
-4. Vision & Intel
-5. Encounter Combat
-6. Item System
-7. Enemy AI
-8. HUD & Combat UI
-9. QA & Playtest Loop
+1. Metagame Economy
+2. Game Shell & Product UI
+3. Run State
+4. Actor Stats
+5. Map & Exploration
+6. Vision & Intel
+7. Encounter Combat
+8. Item System
+9. Enemy AI
+10. HUD & Combat UI
+11. QA & Playtest Loop
 
 ## High-Risk Systems
 
 - Vision & Intel：必须避免玩家“不知道为什么吃亏”。
 - Encounter Combat：必须以 `combat-system.md` 为专门真源；先保护视野、信息和短促照面，不能膨胀成传统 HP 消耗战。
 - Item System：敌人也能持有道具，随机性需要预算控制。
+- Metagame Economy：会改变玩家目标感、失败损失和长期成长；必须先确认本地 Profile、仓库丢失规则、地图档位和物价曲线，再拆 Story 实装。
 
 ## Current Production Rule
 

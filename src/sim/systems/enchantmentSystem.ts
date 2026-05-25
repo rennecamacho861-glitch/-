@@ -207,15 +207,17 @@ export function createGemAffix(itemId: ItemId): ItemAffix | undefined {
   return enchantment ? { kind: "enchantment", enchantment, source: "gem", locked: true } : undefined;
 }
 
-export function rollNaturalItemAffix(seed: string, label: string, itemId: ItemId): ItemAffix | undefined {
+export function rollNaturalItemAffix(seed: string, label: string, itemId: ItemId, chance = NATURAL_ENCHANTMENT_CHANCE): ItemAffix | undefined {
   if (!isEnchantableItem(itemId)) return undefined;
-  if (hashInput(`${seed}-${label}-${itemId}-natural-affix`) % 100 >= NATURAL_ENCHANTMENT_CHANCE) return undefined;
+  if (chance <= 0) return undefined;
+  if (hashInput(`${seed}-${label}-${itemId}-natural-affix`) % 100 >= chance) return undefined;
   const enchantment = ENCHANTMENT_KINDS[hashInput(`${seed}-${label}-${itemId}-enchantment-kind`) % ENCHANTMENT_KINDS.length];
   return { kind: "enchantment", enchantment, source: "natural" };
 }
 
-export function rollMythicGemItem(seed: string, label: string, unavailable: readonly ItemId[] = []): ItemId | undefined {
-  if (hashInput(`${seed}-${label}-mythic-gem-roll`) % 100 >= MYTHIC_GEM_OFFER_CHANCE) return undefined;
+export function rollMythicGemItem(seed: string, label: string, unavailable: readonly ItemId[] = [], chance = MYTHIC_GEM_OFFER_CHANCE): ItemId | undefined {
+  if (chance <= 0) return undefined;
+  if (hashInput(`${seed}-${label}-mythic-gem-roll`) % 100 >= chance) return undefined;
   const candidates = ENCHANTMENT_GEM_IDS.filter((itemId) => !unavailable.includes(itemId));
   if (candidates.length === 0) return undefined;
   return candidates[hashInput(`${seed}-${label}-mythic-gem-kind`) % candidates.length];

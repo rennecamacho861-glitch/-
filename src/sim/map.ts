@@ -6,9 +6,10 @@ import {
   type LootOfferSource,
   type RareItemAppearanceCounts
 } from "./systems/itemBalanceSystem";
-import { rollNaturalItemAffix } from "./systems/enchantmentSystem";
+import { ENCHANTMENT_KINDS, isEnchantableItem, rollNaturalItemAffix } from "./systems/enchantmentSystem";
+import { rollEnemyStats } from "./systems/mapTierSystem";
 import { hashInput } from "./systems/randomSystem";
-import type { ActorState, Direction, EdgeKey, InventorySlot, ItemId, LootNode, MapState, Position, StatBlock, TileKind } from "./types";
+import type { ActorState, Direction, EdgeKey, InventorySlot, ItemId, LootNode, MapState, MapTierDefinition, Position, StatBlock, TileKind } from "./types";
 
 const LAYOUT = [
   ".................",
@@ -71,15 +72,36 @@ const ENEMY_SURNAMES = ["陈", "林", "赵", "沈", "顾", "许", "周", "宋", 
 const ENEMY_GIVEN = ["岚", "朔", "栀", "烬", "砚", "舟", "临", "照", "衡", "隼", "棠", "珩", "霁", "峤", "隅", "澈"];
 
 const STARTER_RARE_ITEMS: ItemId[] = ["echo", "pistol", "bandage", "photon-cut"];
+const ENEMY_SPAWNS: Position[] = [
+  { x: 9, y: 3 },
+  { x: 5, y: 9 },
+  { x: 14, y: 3 },
+  { x: 3, y: 5 },
+  { x: 10, y: 6 },
+  { x: 15, y: 7 },
+  { x: 6, y: 10 },
+  { x: 11, y: 10 },
+  { x: 2, y: 11 },
+  { x: 14, y: 10 },
+  { x: 7, y: 2 },
+  { x: 12, y: 4 },
+  { x: 4, y: 7 },
+  { x: 8, y: 10 },
+  { x: 13, y: 8 }
+];
+
+export type MapGenerationOptions = {
+  mapTier?: MapTierDefinition;
+};
 
 /** Creates the fixed prototype map with tile contents, edge-wall blockers, and rare generation counts. */
-export function createMap(seed: string): { map: MapState; playerStart: Position; rareItemAppearances: RareItemAppearanceCounts } {
+export function createMap(seed: string, options: MapGenerationOptions = {}): { map: MapState; playerStart: Position; rareItemAppearances: RareItemAppearanceCounts } {
   const tiles: TileKind[][] = [];
   let playerStart: Position = { x: 1, y: 1 };
   const wallEdges = createWallEdges(seed);
   const rareItemAppearances = createStarterRareItemAppearances();
-  const aiUnits = createEnemies(seed, wallEdges, rareItemAppearances);
-  const lootNodes = createLootNodes(seed, rareItemAppearances);
+  const aiUnits = createEnemies(seed, wallEdges, rareItemAppearances, options);
+  const lootNodes = createLootNodes(seed, rareItemAppearances, options);
 
   for (let y = 0; y < LAYOUT.length; y += 1) {
     const row: TileKind[] = [];
@@ -366,12 +388,12 @@ function isInBounds(position: Position, width: number, height: number): boolean 
   return position.x >= 0 && position.y >= 0 && position.x < width && position.y < height;
 }
 
-function createLootNodes(seed: string, rareItemAppearances: RareItemAppearanceCounts): LootNode[] {
+function createLootNodes(seed: string, rareItemAppearances: RareItemAppearanceCounts, options: MapGenerationOptions = {}): LootNode[] {
   return LOOT_POSITIONS.map((position, index) => ({
     id: `loot-${index}`,
     position: { ...position },
     depleted: false,
-    offerItemIds: createLootOffer(seed, index, "map", rareItemAppearances)
+    offerItemIds: createLootOffer(seed, index, "map", rareItemAppearances, options)
   }));
 }
 
@@ -380,12 +402,17 @@ export function createLootOffer(
   seed: string,
   index: number,
   source: LootOfferSource = "map",
-  rareItemAppearances?: RareItemAppearanceCounts
+  rareItemAppearances?: RareItemAppearanceCounts,
+  options: MapGenerationOptions = {}
 ): [ItemId, ItemId, ItemId] {
-  return createWeightedItemOffer(PICKUP_ITEM_POOL, ITEMS, seed, `loot-${index}`, source, rareItemAppearances);
+  return createWeightedItemOffer(PICKUP_ITEM_POOL, ITEMS, seed, `loot-${index}`, source, rareItemAppearances, RARE_ITEM_MAX_APPEARANCES, {
+    rarityWeights: options.mapTier?.rarityWeights,
+    mythicGemChance: options.mapTier?.mythicGemOfferChance
+  });
 }
 
-function createEnemies(seed: string, wallEdges: Set<EdgeKey>, rareItemAppearances: RareItemAppearanceCounts): ActorState[] {
+function createEnemies(seed: string, wallEdges: Set<EdgeKey>, rareItemAppearances: RareItemAppearanceCounts, options: MapGenerationOptions = {}): ActorState[] {
+  if (options.mapTier) return createTierEnemies(seed, wallEdges, rareItemAppearances, options.mapTier);
   const enemies = [
     createEnemy({
       id: "ai-1",
@@ -514,6 +541,28 @@ function createEnemies(seed: string, wallEdges: Set<EdgeKey>, rareItemAppearance
   return enemies;
 }
 
+function createTierEnemies(seed: string, wallEdges: Set<EdgeKey>, rareItemAppearances: RareItemAppearanceCounts, tier: MapTierDefinition): ActorState[] {
+  return ENEMY_SPAWNS.map((position, index) => {
+    const id = `ai-${index + 1}`;
+    const stats = rollEnemyStats(seed, `enemy-${index + 1}-${tier.id}`, tier);
+    const offer = createWeightedItemOffer(PICKUP_ITEM_POOL, ITEMS, seed, `enemy-start-${index + 1}-${tier.id}`, "map", rareItemAppearances, RARE_ITEM_MAX_APPEARANCES, {
+      rarityWeights: tier.rarityWeights,
+      mythicGemChance: tier.mythicGemOfferChance
+    });
+    const enemyOffer = tier.enemyStartsWithEnchantedItem ? offer.filter((itemId) => isEnchantableItem(itemId)) : offer;
+    const selectedItemId = enemyOffer[hashInput(`${seed}-${tier.id}-enemy-start-item-${index}`) % enemyOffer.length] ?? offer[0];
+    return createEnemy({
+      id,
+      name: createEnemyName(seed, index + 1),
+      position,
+      stats,
+      patrol: createPatrol(seed, id, position, wallEdges),
+      inventory: [createTierEnemySlot(selectedItemId, seed, index, tier)],
+      enemyTier: tier.rank >= 4 && hashInput(`${seed}-${tier.id}-elite-${index}`) % 100 < 25 ? "elite" : "normal"
+    });
+  });
+}
+
 function createStarterRareItemAppearances(): RareItemAppearanceCounts {
   const counts: RareItemAppearanceCounts = {};
   for (const itemId of STARTER_RARE_ITEMS) registerItemAppearance(counts, ITEMS, itemId, RARE_ITEM_MAX_APPEARANCES);
@@ -530,6 +579,20 @@ function createInitialEnemySlot(
   if (selectedItemId !== itemId) registerItemAppearance(rareItemAppearances, ITEMS, selectedItemId, RARE_ITEM_MAX_APPEARANCES);
   return createInventorySlot(selectedItemId, 1, {
     affix: rollNaturalItemAffix(seed, `enemy-start-${selectedItemId}`, selectedItemId)
+  });
+}
+
+function createTierEnemySlot(itemId: ItemId, seed: string, index: number, tier: MapTierDefinition): InventorySlot {
+  const forcedEnchantment =
+    tier.enemyStartsWithEnchantedItem && isEnchantableItem(itemId)
+      ? {
+          kind: "enchantment" as const,
+          enchantment: ENCHANTMENT_KINDS[hashInput(`${seed}-${tier.id}-enemy-forced-affix-${index}`) % ENCHANTMENT_KINDS.length],
+          source: "natural" as const
+        }
+      : undefined;
+  return createInventorySlot(itemId, 1, {
+    affix: forcedEnchantment ?? rollNaturalItemAffix(seed, `enemy-start-${tier.id}-${index}-${itemId}`, itemId, tier.naturalAffixChance)
   });
 }
 

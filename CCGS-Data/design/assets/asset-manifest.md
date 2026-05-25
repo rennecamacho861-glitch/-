@@ -1,12 +1,12 @@
 # Asset Manifest
 
-> Last updated: 2026-05-18
+> Last updated: 2026-05-25
 
 ## Progress Summary
 
 | Total | Needed | In Progress | Done | Approved |
 |---:|---:|---:|---:|---:|
-| 165 | 0 | 0 | 165 | 165 |
+| 175 | 0 | 0 | 175 | 175 |
 
 ## Assets by Context
 
@@ -214,3 +214,18 @@
 | ASSET-163 | item-last-ice | UI Icon | Done | `CCGS-Data/design/assets/specs/grid-dungeon-passive-grid-item-icons-v0-8-10-assets.md` |
 | ASSET-164 | item-last-match | UI Icon | Done | `CCGS-Data/design/assets/specs/grid-dungeon-passive-grid-item-icons-v0-8-10-assets.md` |
 | ASSET-165 | item-data-spur | UI Icon | Done | `CCGS-Data/design/assets/specs/grid-dungeon-passive-grid-item-icons-v0-8-10-assets.md` |
+
+### system: metagame-shell-ui
+
+| Asset ID | Name | Category | Status | Spec File |
+|---|---|---|---|---|
+| ASSET-166 | ui-shell-hero-bg | UI Background | Done | `CCGS-Data/design/assets/specs/metagame-shell-ui-assets-v0-9-4.md` |
+| ASSET-167 | ui-tab-active | UI Chrome | Done | `CCGS-Data/design/assets/specs/metagame-shell-ui-assets-v0-9-4.md` |
+| ASSET-168 | ui-tab-idle | UI Chrome | Done | `CCGS-Data/design/assets/specs/metagame-shell-ui-assets-v0-9-4.md` |
+| ASSET-169 | ui-shop-header | UI Header | Done | `CCGS-Data/design/assets/specs/metagame-shell-ui-assets-v0-9-4.md` |
+| ASSET-170 | ui-loadout-crate | UI Header | Done | `CCGS-Data/design/assets/specs/metagame-shell-ui-assets-v0-9-4.md` |
+| ASSET-171 | ui-stash-locker | UI Header | Done | `CCGS-Data/design/assets/specs/metagame-shell-ui-assets-v0-9-4.md` |
+| ASSET-172 | ui-panel-frame-wide | UI Chrome | Done | `CCGS-Data/design/assets/specs/metagame-shell-ui-assets-v0-9-4.md` |
+| ASSET-173 | ui-brand-mark | UI Mark | Done | `CCGS-Data/design/assets/specs/metagame-shell-ui-assets-v0-9-4.md` |
+| ASSET-174 | ui-divider-strip | UI Chrome | Done | `CCGS-Data/design/assets/specs/metagame-shell-ui-assets-v0-9-4.md` |
+| ASSET-175 | ui-button-plate | UI Chrome | Done | `CCGS-Data/design/assets/specs/metagame-shell-ui-assets-v0-9-4.md` |

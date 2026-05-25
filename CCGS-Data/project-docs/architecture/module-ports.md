@@ -90,6 +90,7 @@ interface SimulationCommandPort {
 | Tutorial | `TutorialPort` | 教程开始/跳过、当前步骤、正式战斗命令 | 教程状态、允许输入、检查点恢复、完成后开局四选一 |
 | Poison Ring | `PoisonPort` | turn、地图外层、单位位置 | poisonCells、毒圈伤害、避圈评分 |
 | Airdrop | `AirdropPort` | turn、地图候选格、道具池 | 红点提示、额外 LootNode |
+| Profile / Economy | `MetaCommandPort` + `MetaReadPort` | 创建 Profile、属性 roll、金币、仓库、商店、战备、地图档位 | ProfileState、ShopState、DeploymentState、run 启动/结算 |
 | Presentation | `PresentationReadPort` | GameState | HUD view model、render view model |
 
 ## 5. 当前耦合结论

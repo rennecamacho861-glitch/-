@@ -36,6 +36,13 @@
 - `mapSystem`：格子、道具节点、出口、陷阱、红光提示、噪音、毒圈格、空投点。
 - `poisonSystem`：每 20 回合向内收缩地图外层、结算毒圈伤害、给 AI 提供避圈评分。
 - `airdropSystem`：每 15 回合生成额外 LootNode、红点提示和争夺目标。
+- `profileSystem`：局外本地账号、金币、属性档位、仓库、商店刷新和 run history。
+- `economySystem`：道具估值、买入卖出、入场费、重掷与升级成本。
+- `shopSystem`：商店 offer 实例生成、定期刷新、手动刷新、购买。
+- `stashSystem`：仓库实例保存、卖出、战备转移、撤离回收和失败丢失。
+- `deploymentSystem`：地图档位选择、战备值检查、入场费扣除、局内初始背包创建。
+- `mapTierSystem`：五档地图配置、敌人数值预算、掉落权重、附魔概率和宝石开关。
+- `saveSystem`：本地 Profile 持久化与版本迁移。
 - `rng`：固定 seed 随机，保证可复现调参。
 
 第一阶段不需要一次性拆完文件，但数据结构应按这些边界设计。
@@ -90,6 +97,98 @@ type AirdropState = {
 - 每 20 回合毒圈收缩 1 层，毒圈格内单位行动结算后受到 5 点伤害。
 - 每 15 回合生成 1 个空投 LootNode，并通过红点提示。
 - v0.6.7 起删除全局危险数值和危险格；左轮、报警、说服失败等只保留直接效果、日志、情报和位置提示。
+
+## 2.2 v0.9 局外账号、商店、仓库与地图档位端口
+
+规则来源：`metagame-economy.md` 与 `rulebook.md` 第 26 章。该系统不替代局内 `GameState`，而是在局外提供 Profile 和 run 启动/结算端口。
+
+建议新增状态：
+
+```ts
+type ProfileState = {
+  profileId: string;
+  gold: number;
+  statTier: "rookie" | "hardened" | "veteran";
+  stats: StatBlock;
+  rerollCountInTier: number;
+  stash: InventorySlot[];
+  shop: ShopState;
+  unlockedMapTier: MapTierId;
+  runHistory: RunSummary[];
+};
+
+type ShopState = {
+  offers: ShopOffer[];
+  runsSinceFullRefresh: number;
+};
+
+type ShopOffer = {
+  id: string;
+  slot: InventorySlot;
+  price: number;
+  createdAtRunIndex: number;
+};
+
+type MapTierId = "tier-1" | "tier-2" | "tier-3" | "tier-4" | "tier-5";
+
+type DeploymentState = {
+  selectedTier: MapTierId;
+  loadoutSlotIds: string[];
+  deploymentValue: number;
+  entryFee: number;
+};
+```
+
+建议新增配置：
+
+```ts
+type MapTierDefinition = {
+  id: MapTierId;
+  displayName: string;
+  entryFee: number;
+  deploymentCap: number;
+  recommendedDeployment: [number, number];
+  enemyStatBudget: [number, number];
+  rarityWeights: Record<ItemRarity, number>;
+  naturalAffixChance: number;
+  mythicWeight: number;
+  enemiesStartWithEnchantedItem: boolean;
+};
+```
+
+建议新增对外端口：
+
+```ts
+interface MetaCommandPort {
+  createProfile(seed?: string): void;
+  rerollProfileStats(): void;
+  upgradeProfileStatTier(): void;
+  refreshShop(): void;
+  buyShopOffer(offerId: string): void;
+  sellStashSlot(slotId: string): void;
+  equipFromStash(slotId: string): void;
+  unequipToStash(slotId: string): void;
+  selectMapTier(tierId: MapTierId): void;
+  startRunFromDeployment(seed?: string): void;
+  finishRunToProfile(outcome: RunOutcome): void;
+}
+```
+
+数据边界：
+
+- Profile、Shop、Stash、Deployment 属于局外元进度层，不能由 Phaser 或 DOM 直接修改。
+- 局内 `GameSimulation` 创建时接收 `ProfileState.stats`、`DeploymentState.loadout` 和 `MapTierDefinition` 的只读副本。
+- 撤离/失败只通过 `finishRunToProfile()` 回写仓库和金币；局内代码不得直接写 localStorage。
+- 商店与地图掉落必须生成 `InventorySlot` 实例，而不是只生成 `ItemId`，以便保存附魔、弹药和耐久。
+- Tier 2 取代当前固定普通敌人总值 15：敌人总值改为 `10-20` 随机预算。
+
+首批实现拆分建议：
+
+1. Profile + Save：本地 Profile、属性 roll、金币和仓库空状态。
+2. Economy + Shop：物价、买卖、商店刷新和实例 offer。
+3. Deployment + MapTier：地图选择、入场费、战备值、Tier 2 敌人预算接入。
+4. Extraction Pipeline：撤离回仓库、失败丢失、结算 UI。
+5. Tier Loot Expansion：五档掉落、附魔概率、Tier 5 宝石与敌人附魔携带。
 
 ## 3. 属性系统
 
