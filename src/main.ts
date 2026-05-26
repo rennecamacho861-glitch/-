@@ -1,6 +1,6 @@
 ﻿import { itemIconUrl } from "./render/gridDungeonAssets";
 import { MetagameSimulation, createLocalProfileStorage, deploymentValueForSlot, priceForSlot, type MetagamePort } from "./sim/metagame";
-import { activeEffectUiText, itemEnchantmentUiText, itemEnemyCounter, itemUiDescription, itemUiLimit, statusEffectUiText } from "./sim/itemText";
+import { activeEffectUiText, itemEnchantmentUiText, itemUiDescription, itemUiLimit, statusEffectUiText } from "./sim/itemText";
 import { ITEMS } from "./sim/items";
 import { calculateDerivedStats } from "./sim/stats";
 import { enchantedItemName } from "./sim/systems/enchantmentSystem";
@@ -350,7 +350,7 @@ hud.addEventListener("pointerdown", (event) => {
 
   const hoverless = globalThis.matchMedia?.("(hover: none)").matches ?? false;
   if (event.pointerType === "mouse" && !hoverless) return;
-  const tooltipHost = target.closest<HTMLElement>(".meta-item-card, .tool-button, .intel-token, .effect-chip");
+  const tooltipHost = target.closest<HTMLElement>(".meta-item-card, .meta-loadout-chip, .tool-button, .intel-token, .effect-chip");
   if (!tooltipHost) return;
   window.clearTimeout(longPressTimer);
   longPressTimer = window.setTimeout(() => {
@@ -732,6 +732,8 @@ function metagamePanelMarkup(meta: MetagameState): string {
   const summary = profile.lastRunSummary
     ? `<p class="meta-summary">${profile.lastRunSummary.outcome === "extracted" ? "上局撤离" : "上局失败"}：回收 ${profile.lastRunSummary.itemsRecovered} 件，丢失 ${profile.lastRunSummary.itemsLost} 件，金币 +${profile.lastRunSummary.lootGold}</p>`
     : "";
+  const metaMessage = meta.message ?? "";
+  const showMetaMessage = metaMessage.length > 0 && !(activeMetagameView === "home" && metaMessage.startsWith("已选择"));
   const nav = metagameViews
     .map(
       (view) => `<button data-meta-command="set-meta-view" data-meta-view="${view.id}" class="${view.id === activeMetagameView ? "is-active" : ""}" aria-pressed="${view.id === activeMetagameView}">
@@ -772,7 +774,7 @@ function metagamePanelMarkup(meta: MetagameState): string {
         <small>入场 ${meta.selectedMapTier.entryFee} / ${startStatus}</small>
       </div>
     </header>
-    ${meta.message ? `<p class="meta-message">${escapeHtml(meta.message)}</p>` : ""}
+    ${showMetaMessage ? `<p class="meta-message">${escapeHtml(metaMessage)}</p>` : ""}
     <div class="meta-shell-layout">
       <div class="meta-stage-area">
         <div class="meta-page-title">
@@ -817,7 +819,7 @@ function metagameHomeView(meta: MetagameState): string {
   const lastRun = profile.lastRunSummary
     ? `${profile.lastRunSummary.outcome === "extracted" ? "上次撤离成功" : "上次行动失败"} · 回收 ${profile.lastRunSummary.itemsRecovered} 件 · 金币 +${profile.lastRunSummary.lootGold}`
     : "还没有行动记录";
-  const deployment = profile.deployment.map((slot) => deploymentSlotCard(slot, meta.activeRun)).join("");
+  const deploymentSummary = deploymentSummaryMarkup(meta);
   const loadoutState = meta.canStartRun ? "可以进场" : "金币不足或战备超限";
   const selectedIndex = Math.max(0, meta.mapTiers.findIndex((tier) => tier.id === profile.selectedMapTierId));
   const selectedTier = meta.mapTiers[selectedIndex] ?? meta.selectedMapTier;
@@ -844,14 +846,20 @@ function metagameHomeView(meta: MetagameState): string {
         <div>
           <span class="eyebrow">入场检查</span>
           <h3>${loadoutState}</h3>
-          <p>选择地图后检查入场费和战备上限。失败会丢失带入物，撤离成功才会带回本局所得。</p>
+          <p>确认费用、战备和风险。完整携带管理在背包中完成。</p>
         </div>
-        <div class="meta-loadout-summary">
+        <div class="meta-loadout-summary meta-entry-metrics">
           <span>入场费 ${selectedTier.entryFee}</span>
           <span>敌人 ${selectedTier.enemyStatTotalRange[0]}-${selectedTier.enemyStatTotalRange[1]}</span>
           <span>掉落 ${tierRarityLine(selectedTier)}</span>
         </div>
-        <div class="meta-item-list meta-entry-loadout">${deployment || "<p>还没有带入物品。去背包选择要冒险带入的装备。</p>"}</div>
+        <div class="meta-loadout-compact">
+          <div>
+            <strong>携带 ${profile.deployment.length} 件</strong>
+            <small>战备 ${meta.deploymentValue}/${selectedTier.deploymentValueCap} · 失败丢失，撤离回仓库</small>
+          </div>
+          ${deploymentSummary}
+        </div>
         <div class="meta-actions meta-action-row">
           <button class="start-run-button meta-primary-cta" data-meta-command="open-run-confirm">开始行动</button>
           <button data-meta-command="set-meta-view" data-meta-view="stash">调整背包</button>
@@ -859,7 +867,7 @@ function metagameHomeView(meta: MetagameState): string {
         </div>
       </aside>
     </div>
-    <div class="meta-home-grid">
+    <div class="meta-home-grid is-supporting">
       <article>
         <strong>当前目标</strong>
         <span>进场 → 搜刮/交战 → 找出口撤离</span>
@@ -1053,6 +1061,25 @@ function stashSlotCard(slot: ProfileItemSlot, activeRun: boolean): string {
   </article>`;
 }
 
+function deploymentSummaryMarkup(meta: MetagameState): string {
+  const slots = meta.profile.deployment;
+  if (!slots.length) {
+    return `<div class="meta-loadout-chips is-empty"><span>未携带道具</span></div>`;
+  }
+  const preview = slots
+    .slice(0, 3)
+    .map(
+      (slot) => `<span class="meta-loadout-chip" data-rarity="${slot.item.rarity}"${enchantmentDataAttr(slot)} tabindex="0">
+        ${profileSlotIconMarkup(slot)}
+        <span class="meta-loadout-chip-name">${escapeHtml(enchantedItemName(slot))}</span>
+        ${profileSlotTooltipMarkup(slot, `战备值 ${deploymentValueForSlot(slot)}；失败会丢失，撤离成功会回仓库`)}
+      </span>`
+    )
+    .join("");
+  const extra = slots.length > 3 ? `<span class="meta-loadout-more">+${slots.length - 3}</span>` : "";
+  return `<div class="meta-loadout-chips">${preview}${extra}</div>`;
+}
+
 function deploymentSlotCard(slot: ProfileItemSlot, activeRun: boolean): string {
   return `<article class="meta-item-card" data-rarity="${slot.item.rarity}"${enchantmentDataAttr(slot)} tabindex="0">
     ${profileSlotIconMarkup(slot)}
@@ -1145,7 +1172,7 @@ function intelMarkup(entry: IntelEntry): string {
       <span class="intel-tooltip">
         <strong>${escapeHtml(item.name)} · ${rarityLabel(item.rarity)}</strong>
         <em>${escapeHtml(itemUiDescription(entry.itemId))}</em>
-        <small>应对：${escapeHtml(itemEnemyCounter(entry.itemId))}</small>
+        <small>${escapeHtml(itemUiLimit(entry.itemId))}</small>
       </span>
     </span>
   </li>`;

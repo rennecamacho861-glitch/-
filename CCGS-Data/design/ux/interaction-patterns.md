@@ -41,8 +41,8 @@
 
 ## Pattern: Intel Tooltip
 
-- Intel entries can expose item description and counterplay through hover/focus tooltip.
-- Tooltip content is read-only and comes from item definitions.
+- Intel entries can expose the same item description and usage-limit text used by backpack/shop item tooltips.
+- Tooltip content is read-only and comes from the player-facing item text port, not raw `counterplay`.
 - Confirmed and suspected intel must retain separate labels.
 - Tooltip must be keyboard focusable through the intel token.
 

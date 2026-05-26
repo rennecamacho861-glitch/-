@@ -1,5 +1,23 @@
 # Active Session State
 
+## Session Extract - /quick-design + /team-ui 2026-05-26 v0.9.11
+
+- Verdict: COMPLETE WITH NOTES
+- Topic: 主页面层次感补强、战斗 tooltip 遮挡修复、道具说明去除“应对”并统一为背包文案结构
+- Files changed: `CCGS-Data/design/quick-specs/lobby-depth-and-item-tooltip-unification-2026-05-26.md`, `CCGS-Data/design/ux/interaction-patterns.md`, `src/main.ts`, `src/styles.css`, `tests/unit/item_text.test.mjs`, `CCGS-Data/production/changelogs/2026-05-26-v0-9-11-lobby-depth-item-tooltip-changelog.md`, `CCGS-Data/production/qa/reports/2026-05-26-v0-9-11-lobby-depth-item-tooltip-qa-report.md`
+- Implemented: 局外主页面增加冷暖光照、面板内描边和当前地图卡抬升阴影；右侧携带物 tooltip 层级高于战斗面板；战斗面板允许情报 tooltip 溢出显示；已知敌方道具 tooltip 移除“应对：”，改为效果说明 + 使用限制；交互模式库同步为“玩家文案端口，不展示 raw counterplay”。
+- Validation: `npm run build` 通过；`npm test` 132/132 通过；源码 grep 确认 HUD 不再显示旧“应对：”调用。
+- Notes: 未修改 `src/sim` 道具效果、战斗结算或局外经济；当前环境未补浏览器截图证据，发布前建议补桌面截图确认亮度与层级。
+
+## Session Extract - /quick-design + /team-ui 2026-05-26 v0.9.10
+
+- Verdict: COMPLETE WITH NOTES
+- Topic: 局外大厅视觉优先级降权，保留原结构但压低辅助信息和装饰权重
+- Files changed: `CCGS-Data/design/quick-specs/metagame-lobby-visual-priority-deemphasis-2026-05-26.md`, `src/main.ts`, `src/styles.css`, `CCGS-Data/production/changelogs/2026-05-26-v0-9-10-metagame-lobby-visual-priority-changelog.md`, `CCGS-Data/production/qa/reports/2026-05-26-v0-9-10-metagame-lobby-visual-priority-qa-report.md`
+- Implemented: 行动主页隐藏“已选择地图”常驻消息条；入场检查从完整携带列表改为携带数量、战备值、风险说明和最多 3 个物品预览；紧凑物品预览继续支持 hover/focus/触屏长按 tooltip；顶部资源、右侧普通导航、底部摘要、相邻地图和装饰框整体降权，保留地图与开始行动为第一焦点。
+- Validation: `npm run build` 通过；`npm test` 132/132 通过；本地预览 `http://127.0.0.1:5188/` 返回 200。
+- Notes: 未修改 `src/sim`、局外经济、地图档位或战备规则；当前环境未补浏览器截图证据，发布前建议补桌面和移动端视觉截图。
+
 ## Session Extract - /hotfix 2026-05-26 v0.9.9
 
 - Verdict: COMPLETE

@@ -86,8 +86,10 @@ test("HUD and pickup log read item UI descriptions through the presentation port
   assert.ok(mainSource.includes('from "./sim/itemText";'));
   assert.ok(mainSource.includes("itemUiDescription(slot.item.id)"));
   assert.ok(mainSource.includes("itemUiDescription(entry.itemId)"));
-  assert.ok(mainSource.includes("itemEnemyCounter(entry.itemId)"));
+  assert.equal(mainSource.includes("应对："), false);
+  assert.equal(mainSource.includes("itemEnemyCounter(entry.itemId)"), false);
   assert.ok(mainSource.includes("itemUiLimit(itemId)"));
+  assert.ok(mainSource.includes("itemUiLimit(entry.itemId)"));
   assert.ok(mainSource.includes("activeEffectUiText(effect"));
   assert.ok(mainSource.includes("statusEffectUiText(effect"));
   assert.equal(mainSource.includes("item.counterplay"), false);
