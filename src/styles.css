@@ -2283,6 +2283,21 @@ button[data-tutorial-highlight="true"]::after {
   transform: translate(26%, -50%) scale(0.92);
 }
 
+.meta-map-card.is-active:hover:not(:disabled),
+.meta-map-card.is-active:focus-visible {
+  transform: translate(-50%, -50%);
+}
+
+.meta-map-card.is-prev:hover:not(:disabled),
+.meta-map-card.is-prev:focus-visible {
+  transform: translate(-26%, -50%) scale(0.92);
+}
+
+.meta-map-card.is-next:hover:not(:disabled),
+.meta-map-card.is-next:focus-visible {
+  transform: translate(26%, -50%) scale(0.92);
+}
+
 .meta-map-rank {
   position: absolute;
   top: 18px;
@@ -2380,6 +2395,11 @@ button[data-tutorial-highlight="true"]::after {
   right: 18px;
 }
 
+.meta-carousel-arrow:hover:not(:disabled),
+.meta-carousel-arrow:focus-visible {
+  transform: translateY(-50%);
+}
+
 .meta-carousel-pips {
   position: absolute;
   left: 50%;
@@ -2404,6 +2424,11 @@ button[data-tutorial-highlight="true"]::after {
   border-color: rgba(213, 170, 85, 0.8);
   background: rgba(213, 170, 85, 0.22);
   color: #fff1c8;
+}
+
+.meta-carousel-pips button:hover:not(:disabled),
+.meta-carousel-pips button:focus-visible {
+  transform: none;
 }
 
 .meta-start-console {
@@ -2458,6 +2483,79 @@ button[data-tutorial-highlight="true"]::after {
   color: rgba(238, 231, 216, 0.64);
   font-size: 13px;
   line-height: 1.5;
+}
+
+.meta-run-confirm-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(213, 170, 85, 0.13), transparent 36%),
+    rgba(0, 0, 0, 0.58);
+  padding: 18px;
+}
+
+.meta-run-confirm {
+  display: grid;
+  gap: 12px;
+  width: min(520px, calc(100vw - 36px));
+  border: 1px solid rgba(213, 170, 85, 0.5);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(18, 23, 23, 0.98), rgba(5, 7, 8, 0.98)),
+    url("/assets/grid-dungeon/ui/ui-panel-frame-wide.png") right bottom / 320px 110px no-repeat,
+    repeating-linear-gradient(135deg, rgba(213, 170, 85, 0.05) 0 1px, transparent 1px 7px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 176, 0.12),
+    0 28px 80px rgba(0, 0, 0, 0.62);
+  padding: 20px;
+}
+
+.meta-run-confirm h3 {
+  margin: 0;
+  color: #fff1c8;
+  font-size: 28px;
+  line-height: 1.08;
+}
+
+.meta-run-confirm p {
+  margin: 0;
+  color: rgba(238, 231, 216, 0.68);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.meta-confirm-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.meta-confirm-facts span {
+  min-width: 0;
+  border: 1px solid rgba(238, 231, 216, 0.13);
+  border-radius: 7px;
+  background: rgba(5, 8, 9, 0.72);
+  color: rgba(238, 231, 216, 0.75);
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.meta-confirm-warning {
+  border: 1px solid rgba(201, 90, 79, 0.36);
+  border-radius: 7px;
+  background: rgba(74, 26, 22, 0.34);
+  color: rgba(255, 190, 178, 0.86) !important;
+  padding: 9px 10px;
+}
+
+.meta-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .tool-button.is-touch-tooltip .tool-tooltip,
@@ -2761,6 +2859,16 @@ button[data-tutorial-highlight="true"]::after {
     transform: translate(34%, -50%) scale(0.88);
   }
 
+  .meta-map-card.is-prev:hover:not(:disabled),
+  .meta-map-card.is-prev:focus-visible {
+    transform: translate(-34%, -50%) scale(0.88);
+  }
+
+  .meta-map-card.is-next:hover:not(:disabled),
+  .meta-map-card.is-next:focus-visible {
+    transform: translate(34%, -50%) scale(0.88);
+  }
+
   .meta-map-rank {
     top: 12px;
     left: 12px;
@@ -2841,6 +2949,29 @@ button[data-tutorial-highlight="true"]::after {
     left: 0;
     width: min(340px, calc(100vw - 36px));
     pointer-events: none;
+  }
+
+  .meta-run-confirm-backdrop {
+    align-items: end;
+    padding: 14px 12px 88px;
+  }
+
+  .meta-run-confirm {
+    width: 100%;
+    padding: 16px;
+  }
+
+  .meta-run-confirm h3 {
+    font-size: 22px;
+  }
+
+  .meta-confirm-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .meta-confirm-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }
 

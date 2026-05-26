@@ -51,6 +51,7 @@ let carouselPointerStart: { x: number; y: number; prevTierId?: string; nextTierI
 let longPressTimer: number | undefined;
 let touchTooltipTarget: HTMLElement | undefined;
 let suppressNextHudClick = false;
+let pendingRunConfirm = false;
 
 const actionLabels = {
   attack: "进攻",
@@ -672,18 +673,37 @@ function handleMetagameAction(button: HTMLButtonElement, command: string): boole
   if (command === "set-meta-view") {
     const nextView = button.dataset.metaView;
     if (isMetagameView(nextView)) activeMetagameView = nextView;
+    pendingRunConfirm = false;
     return true;
   }
-  if (command === "select-tier") metaPort.selectMapTier?.(button.dataset.tierId as MapTierId);
+  if (command === "select-tier") {
+    metaPort.selectMapTier?.(button.dataset.tierId as MapTierId);
+    pendingRunConfirm = false;
+  }
+  if (command === "open-run-confirm") {
+    pendingRunConfirm = true;
+    return true;
+  }
+  if (command === "cancel-run-confirm") {
+    pendingRunConfirm = false;
+    return true;
+  }
   if (command === "start-run") {
+    const meta = metaPort.metaSnapshot();
+    if (meta && !meta.canStartRun) {
+      pendingRunConfirm = true;
+      return true;
+    }
     if (tutorialPreference === null) {
       tutorialPreference = "off";
       writeTutorialPreference("off");
     }
+    pendingRunConfirm = false;
     clearFeedbackToast();
     metaPort.startRun?.(createRunSeed());
   }
   if (command === "tutorial-run") {
+    pendingRunConfirm = false;
     tutorialPreference = "on";
     writeTutorialPreference("on");
     clearFeedbackToast();
@@ -763,7 +783,7 @@ function metagamePanelMarkup(meta: MetagameState): string {
         <div class="meta-view">${metagameViewMarkup(meta, statTotal)}</div>
       </div>
       <aside class="meta-shell-nav" aria-label="局外导航">
-        <button class="meta-rail-start" data-meta-command="start-run" ${meta.canStartRun ? "" : "disabled"}>
+        <button class="meta-rail-start" data-meta-command="open-run-confirm">
           <span class="eyebrow">进入地图</span>
           <strong>开始行动</strong>
           <small>${escapeHtml(meta.selectedMapTier.name)} · 入场 ${meta.selectedMapTier.entryFee}</small>
@@ -771,6 +791,7 @@ function metagamePanelMarkup(meta: MetagameState): string {
         <nav class="meta-nav" aria-label="局外页面">${nav}</nav>
       </aside>
     </div>
+    ${pendingRunConfirm ? metagameRunConfirmMarkup(meta) : ""}
   </section>`;
 }
 
@@ -812,10 +833,10 @@ function metagameHomeView(meta: MetagameState): string {
   return `<section class="meta-section meta-home-view">
     <div class="meta-battle-stage">
       <section class="meta-map-carousel" data-prev-tier="${previousTier.id}" data-next-tier="${nextTier.id}" aria-label="地图档位轮播">
-        ${mapTierCardMarkup(previousTier, "is-ghost is-prev")}
-        ${mapTierCardMarkup(nextTier, "is-ghost is-next")}
+        ${mapTierCardMarkup(previousTier, "is-ghost is-prev", "select-tier")}
+        ${mapTierCardMarkup(nextTier, "is-ghost is-next", "select-tier")}
         <button class="meta-carousel-arrow is-left" data-meta-command="select-tier" data-tier-id="${previousTier.id}" aria-label="上一张地图">‹</button>
-        ${mapTierCardMarkup(selectedTier, "is-active")}
+        ${mapTierCardMarkup(selectedTier, "is-active", "open-run-confirm")}
         <button class="meta-carousel-arrow is-right" data-meta-command="select-tier" data-tier-id="${nextTier.id}" aria-label="下一张地图">›</button>
         <div class="meta-carousel-pips" aria-label="地图档位">${pips}</div>
       </section>
@@ -832,7 +853,7 @@ function metagameHomeView(meta: MetagameState): string {
         </div>
         <div class="meta-item-list meta-entry-loadout">${deployment || "<p>还没有带入物品。去背包选择要冒险带入的装备。</p>"}</div>
         <div class="meta-actions meta-action-row">
-          <button class="start-run-button meta-primary-cta" data-meta-command="start-run" ${meta.canStartRun ? "" : "disabled"}>开始行动</button>
+          <button class="start-run-button meta-primary-cta" data-meta-command="open-run-confirm">开始行动</button>
           <button data-meta-command="set-meta-view" data-meta-view="stash">调整背包</button>
           <button data-meta-command="tutorial-run">训练教程</button>
         </div>
@@ -859,8 +880,8 @@ function metagameHomeView(meta: MetagameState): string {
   </section>`;
 }
 
-function mapTierCardMarkup(tier: MetagameState["mapTiers"][number], variantClass: string): string {
-  return `<button class="meta-map-card ${variantClass}" data-meta-command="select-tier" data-tier-id="${tier.id}" title="${escapeHtml(tier.description)}">
+function mapTierCardMarkup(tier: MetagameState["mapTiers"][number], variantClass: string, command: "select-tier" | "open-run-confirm"): string {
+  return `<button class="meta-map-card ${variantClass}" data-meta-command="${command}" data-tier-id="${tier.id}" title="${escapeHtml(tier.description)}">
     <span class="meta-map-rank">第 ${tier.rank} 档</span>
     <span class="meta-map-art" aria-hidden="true"></span>
     <span class="meta-map-copy">
@@ -874,6 +895,29 @@ function mapTierCardMarkup(tier: MetagameState["mapTiers"][number], variantClass
       <b>${tier.enemyStartsWithEnchantedItem ? "敌人携带附魔" : "常规敌人"}</b>
     </span>
   </button>`;
+}
+
+function metagameRunConfirmMarkup(meta: MetagameState): string {
+  const deployment = meta.profile.deployment.map((slot) => enchantedItemName(slot)).join("、") || "未携带道具";
+  const blockReason = meta.canStartRun ? "" : "金币不足或战备超限，请先调整背包或选择低档地图。";
+  return `<section class="meta-run-confirm-backdrop" role="presentation">
+    <div class="meta-run-confirm" role="dialog" aria-modal="true" aria-label="确认进入地图">
+      <span class="eyebrow">确认进入地图</span>
+      <h3>${escapeHtml(meta.selectedMapTier.name)}</h3>
+      <p>进入后会支付入场费，并带着当前战备进入迷宫。失败会失去带入物和本局所得；撤离成功才会带回战利。</p>
+      <div class="meta-confirm-facts">
+        <span>入场费 ${meta.selectedMapTier.entryFee}</span>
+        <span>战备 ${meta.deploymentValue}/${meta.selectedMapTier.deploymentValueCap}</span>
+        <span>敌人 ${meta.selectedMapTier.enemyStatTotalRange[0]}-${meta.selectedMapTier.enemyStatTotalRange[1]}</span>
+        <span>携带：${escapeHtml(deployment)}</span>
+      </div>
+      ${blockReason ? `<p class="meta-confirm-warning">${escapeHtml(blockReason)}</p>` : ""}
+      <div class="meta-confirm-actions">
+        <button data-meta-command="cancel-run-confirm">取消</button>
+        <button class="meta-primary-cta" data-meta-command="start-run" ${meta.canStartRun ? "" : "disabled"}>确认进入</button>
+      </div>
+    </div>
+  </section>`;
 }
 
 function tierRarityLine(tier: MetagameState["mapTiers"][number]): string {

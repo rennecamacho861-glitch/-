@@ -1,5 +1,22 @@
 # Active Session State
 
+## Session Extract - /hotfix 2026-05-26 v0.9.9
+
+- Verdict: COMPLETE
+- Topic: 点击当前地图弹出确认进入关卡窗口，确认后进入游戏
+- Files changed: `src/main.ts`, `src/styles.css`, `CCGS-Data/production/changelogs/2026-05-26-v0-9-9-run-confirm-entry-hotfix-changelog.md`, `CCGS-Data/production/qa/reports/2026-05-26-v0-9-9-run-confirm-entry-hotfix-qa-report.md`
+- Implemented: 当前地图卡、侧栏开始行动、行动页开始行动统一先打开确认窗；确认窗展示地图、入场费、战备、敌人数值和携带物；确认后调用现有 `startRun`，取消不改状态；无法出发时显示原因并禁用确认。
+- Validation: `npm run build` 通过；`npm test` 132/132 通过。
+
+## Session Extract - /hotfix 2026-05-26 v0.9.8
+
+- Verdict: COMPLETE
+- Topic: 修复局外地图卡 hover 时飞到右下角
+- Files changed: `src/styles.css`, `CCGS-Data/production/changelogs/2026-05-26-v0-9-8-map-card-hover-transform-hotfix-changelog.md`, `CCGS-Data/production/qa/reports/2026-05-26-v0-9-8-map-card-hover-transform-hotfix-qa-report.md`
+- Root cause: `.meta-map-card` 是 button，悬浮时被全局 `button:hover { transform: translateY(-1px) }` 覆盖，丢失原本用于居中和左右露边的 transform。
+- Implemented: 为当前地图、左右相邻地图、轮播箭头和圆点增加局部 hover/focus transform 覆盖。
+- Validation: `npm run build` 通过；`npm test` 132/132 通过。
+
 ## Session Extract - /ux-design + /team-ui + /quick-design 2026-05-26 v0.9.7
 
 - Verdict: COMPLETE WITH NOTES
