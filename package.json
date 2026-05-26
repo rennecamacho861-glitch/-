@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5188 --strictPort",
+    "serve:dist": "node scripts/serve-dist.cjs",
     "build": "tsc && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 5188 --strictPort",
     "test": "tsc -p tsconfig.test.json && node scripts/prepare-test-build.cjs && node --test \"tests/**/*.test.mjs\" \"tests/**/*_test.mjs\""

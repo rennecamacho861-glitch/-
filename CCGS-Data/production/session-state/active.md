@@ -1,5 +1,22 @@
 # Active Session State
 
+## Session Extract - /ux-design + /team-ui + /quick-design 2026-05-26 v0.9.7
+
+- Verdict: COMPLETE WITH NOTES
+- Topic: 局外大厅改为响应式地图轮播外壳，并补触屏长按 tooltip
+- Files changed: `src/main.ts`, `src/styles.css`, `package.json`, `scripts/serve-dist.cjs`, `CCGS-Data/design/quick-specs/responsive-map-carousel-lobby-2026-05-26.md`, `CCGS-Data/design/ux/metagame-responsive-carousel-lobby.md`, `CCGS-Data/design/ux/interaction-patterns-v0-9-7-addendum.md`, `CCGS-Data/production/changelogs/2026-05-26-v0-9-7-responsive-map-carousel-lobby-changelog.md`, `CCGS-Data/production/qa/reports/2026-05-26-v0-9-7-responsive-map-carousel-lobby-qa-report.md`
+- Implemented: 桌面端左侧大地图轮播、右侧竖向导航且首位为进入地图；手机端顶部玩家资源、中部地图轮播、底部五入口导航（商城/角色/战斗/背包/百科）；地图支持箭头/圆点/相邻地图点击与拖动/滑动切换；触屏长按可查看道具/情报 tooltip 且抑制误点击；新增百科页。
+- Validation: `npm run build` 通过；`npm test` 132/132 通过。
+- Notes: 当前会话未暴露可用 Browser/Playwright 截图工具，发布前建议补桌面与手机截图证据；后台持久化启动本地服务在当前 shell 包装器中会被回收，已提供 `npm run serve:dist` 作为构建后预览命令；本轮未调用 imagegen，复用现有 UI 与地图背景资产。
+
+## Session Extract - browser feedback 2026-05-25 v0.9.6
+
+- Verdict: IN VALIDATION
+- Topic: 局外大厅隐藏局内 HUD，并扩展局外系统页面到完整视图
+- Files changed: `src/main.ts`, `src/styles.css`, `CCGS-Data/production/changelogs/2026-05-25-v0-9-6-lobby-run-hud-boundary-changelog.md`, `CCGS-Data/production/qa/reports/2026-05-25-v0-9-6-lobby-run-hud-boundary-qa-report.md`
+- Implemented: `showRunHud = !meta || meta.activeRun` 作为 HUD 渲染边界；局外隐藏顶栏、侧边携带物/记录、底部重开条、拾取/战斗/结算浮层；局外面板扩展为接近全屏；进入关卡后恢复局内 HUD。
+- Validation: `npm run build` 通过；`npm test` 132/132 通过；`http://127.0.0.1:5188/` 返回 200。
+
 ## Session Extract - /ux-design 2026-05-25 v0.9.5
 
 - Verdict: COMPLETE WITH NOTES

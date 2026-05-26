@@ -1318,22 +1318,25 @@ button[data-tutorial-highlight="true"]::after {
 }
 
 .metagame-panel.is-lobby {
-  top: 104px;
+  top: 18px;
   left: 24px;
-  width: min(900px, calc(100vw - 384px));
-  max-height: calc(100vh - 144px);
+  right: 24px;
+  bottom: 18px;
+  width: auto;
+  max-height: none;
   padding: 14px;
   overflow: auto;
 }
 
 .metagame-panel.is-lobby.view-home {
-  top: 84px;
-  width: min(1160px, calc(100vw - 360px));
-  max-height: calc(100vh - 112px);
+  top: 18px;
+  width: auto;
+  max-height: none;
 }
 
 .metagame-panel.is-lobby.view-account {
-  width: min(780px, calc(100vw - 384px));
+  width: min(960px, calc(100vw - 48px));
+  right: auto;
 }
 
 .metagame-panel.is-compact {
@@ -1976,6 +1979,494 @@ button[data-tutorial-highlight="true"]::after {
   grid-column: 1 / -1;
 }
 
+.metagame-panel.is-lobby {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
+}
+
+.metagame-panel.is-lobby.view-account {
+  right: 24px;
+  width: auto;
+}
+
+.meta-lobby-topbar {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(220px, 0.82fr) minmax(360px, 1.2fr) minmax(240px, 0.8fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.meta-player-chip,
+.meta-current-route,
+.meta-resource-strip {
+  border: 1px solid rgba(238, 231, 216, 0.14);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(17, 24, 25, 0.88), rgba(5, 8, 9, 0.9)),
+    repeating-linear-gradient(135deg, rgba(112, 184, 173, 0.035) 0 1px, transparent 1px 7px);
+  box-shadow: inset 0 1px 0 rgba(255, 230, 176, 0.08);
+}
+
+.meta-player-chip {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 9px 11px;
+}
+
+.meta-player-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 2px solid rgba(213, 170, 85, 0.7);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 40% 25%, rgba(255, 230, 176, 0.24), transparent 46%),
+    linear-gradient(135deg, rgba(63, 50, 26, 0.86), rgba(14, 18, 19, 0.95));
+  color: #fff0c4;
+  font-weight: 900;
+}
+
+.meta-player-chip strong,
+.meta-current-route strong {
+  display: block;
+  overflow: hidden;
+  color: #f8ead0;
+  font-size: 18px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta-player-chip small,
+.meta-current-route small {
+  display: block;
+  margin-top: 3px;
+  color: rgba(238, 231, 216, 0.6);
+  font-size: 12px;
+}
+
+.meta-resource-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  padding: 0;
+}
+
+.meta-resource-strip span {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  min-height: 64px;
+  border-left: 1px solid rgba(238, 231, 216, 0.08);
+  padding: 8px 10px;
+}
+
+.meta-resource-strip span:first-child {
+  border-left: 0;
+}
+
+.meta-resource-strip strong {
+  overflow: hidden;
+  color: var(--ui-amber);
+  font-size: 17px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta-resource-strip small {
+  margin-top: 3px;
+  color: rgba(238, 231, 216, 0.54);
+  font-size: 11px;
+}
+
+.meta-current-route {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  padding: 9px 11px;
+}
+
+.meta-shell-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 228px;
+  gap: 14px;
+  min-height: 0;
+}
+
+.meta-stage-area {
+  min-width: 0;
+  min-height: 0;
+}
+
+.meta-page-title {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.meta-page-title h2 {
+  margin: 0;
+  color: #f8ead0;
+  font-size: clamp(22px, 2.6vw, 36px);
+  line-height: 1.05;
+}
+
+.meta-shell-nav {
+  position: sticky;
+  top: 0;
+  display: grid;
+  align-self: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.meta-rail-start {
+  display: grid;
+  gap: 5px;
+  min-height: 112px;
+  border-color: rgba(213, 170, 85, 0.78);
+  background:
+    linear-gradient(180deg, rgba(87, 66, 26, 0.86), rgba(15, 18, 17, 0.92)),
+    url("/assets/grid-dungeon/ui/ui-button-plate.png") center / 100% 100% no-repeat;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 230, 176, 0.14),
+    0 18px 34px rgba(213, 170, 85, 0.13);
+  text-align: left;
+}
+
+.meta-rail-start strong {
+  color: #fff1c8;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.meta-rail-start small {
+  color: rgba(255, 230, 176, 0.68);
+  line-height: 1.35;
+}
+
+.meta-nav {
+  grid-template-columns: 1fr;
+  margin-top: 0;
+}
+
+.meta-nav button {
+  min-height: 70px;
+}
+
+.meta-view {
+  min-height: 0;
+  margin-top: 0;
+}
+
+.meta-battle-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(286px, 0.36fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.meta-map-carousel {
+  position: relative;
+  min-height: clamp(430px, 58vh, 680px);
+  overflow: hidden;
+  border: 1px solid rgba(238, 231, 216, 0.14);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 50% 58%, rgba(213, 170, 85, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(7, 10, 11, 0.38), rgba(0, 0, 0, 0.58)),
+    url("/assets/grid-dungeon/ui/ui-shell-hero-bg.png") center / cover no-repeat;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 230, 176, 0.06),
+    inset 0 -80px 110px rgba(0, 0, 0, 0.46),
+    0 22px 60px rgba(0, 0, 0, 0.42);
+  touch-action: pan-y;
+}
+
+.meta-map-carousel::before,
+.meta-map-carousel::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 18%;
+  pointer-events: none;
+}
+
+.meta-map-carousel::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.7), transparent);
+}
+
+.meta-map-carousel::after {
+  right: 0;
+  background: linear-gradient(270deg, rgba(0, 0, 0, 0.7), transparent);
+}
+
+.meta-map-card {
+  position: absolute;
+  display: grid;
+  align-content: end;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(238, 231, 216, 0.18);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(10, 14, 15, 0.02) 0%, rgba(4, 6, 7, 0.38) 48%, rgba(4, 6, 7, 0.92) 100%),
+    url("/assets/grid-dungeon/ui/ui-shell-hero-bg.png") center / cover no-repeat,
+    rgba(5, 7, 8, 0.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 176, 0.12),
+    0 18px 42px rgba(0, 0, 0, 0.5);
+  padding: 18px;
+  text-align: left;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease,
+    filter 180ms ease;
+}
+
+.meta-map-card::before {
+  content: "";
+  position: absolute;
+  inset: 18px 18px auto auto;
+  width: 112px;
+  height: 112px;
+  border: 1px solid rgba(112, 184, 173, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(rgba(112, 184, 173, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(112, 184, 173, 0.16) 1px, transparent 1px);
+  background-size: 16px 16px;
+  opacity: 0.58;
+  pointer-events: none;
+}
+
+.meta-map-card.is-active {
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  width: min(72%, 740px);
+  height: min(82%, 540px);
+  transform: translate(-50%, -50%);
+  border-color: rgba(213, 170, 85, 0.72);
+}
+
+.meta-map-card.is-ghost {
+  top: 50%;
+  z-index: 1;
+  width: min(36%, 320px);
+  height: 70%;
+  opacity: 0.55;
+  filter: saturate(0.72) brightness(0.66);
+}
+
+.meta-map-card.is-prev {
+  left: 0;
+  transform: translate(-26%, -50%) scale(0.92);
+}
+
+.meta-map-card.is-next {
+  right: 0;
+  transform: translate(26%, -50%) scale(0.92);
+}
+
+.meta-map-rank {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 1;
+  border: 1px solid rgba(213, 170, 85, 0.5);
+  border-radius: 999px;
+  background: rgba(8, 10, 11, 0.74);
+  color: #ffe0a1;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.meta-map-art {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(213, 170, 85, 0.22), transparent 28%),
+    repeating-linear-gradient(0deg, transparent 0 35px, rgba(255, 230, 176, 0.06) 35px 36px),
+    repeating-linear-gradient(90deg, transparent 0 35px, rgba(255, 230, 176, 0.06) 35px 36px);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.meta-map-copy,
+.meta-map-tags {
+  position: relative;
+  z-index: 1;
+}
+
+.meta-map-copy {
+  display: grid;
+  gap: 7px;
+  max-width: 560px;
+}
+
+.meta-map-copy strong {
+  color: #fff0cf;
+  font-size: clamp(24px, 3vw, 42px);
+  line-height: 1.05;
+  text-shadow: 0 0 24px rgba(213, 170, 85, 0.18);
+}
+
+.meta-map-copy small,
+.meta-map-copy em {
+  color: rgba(238, 231, 216, 0.7);
+  font-size: 13px;
+  font-style: normal;
+  line-height: 1.45;
+}
+
+.meta-map-copy em {
+  color: rgba(238, 231, 216, 0.58);
+}
+
+.meta-map-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.meta-map-tags b {
+  border: 1px solid rgba(238, 231, 216, 0.14);
+  border-radius: 999px;
+  background: rgba(4, 6, 7, 0.74);
+  color: rgba(230, 246, 244, 0.78);
+  padding: 5px 8px;
+  font-size: 11px;
+}
+
+.meta-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 66px;
+  min-height: 0;
+  transform: translateY(-50%);
+  border-color: rgba(255, 230, 176, 0.35);
+  border-radius: 8px;
+  background: rgba(8, 10, 11, 0.62);
+  color: #ffe0a1;
+  font-size: 38px;
+  line-height: 1;
+}
+
+.meta-carousel-arrow.is-left {
+  left: 18px;
+}
+
+.meta-carousel-arrow.is-right {
+  right: 18px;
+}
+
+.meta-carousel-pips {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 6;
+  display: flex;
+  gap: 7px;
+  transform: translateX(-50%);
+}
+
+.meta-carousel-pips button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  border-radius: 50%;
+  padding: 0;
+}
+
+.meta-carousel-pips button.is-active {
+  border-color: rgba(213, 170, 85, 0.8);
+  background: rgba(213, 170, 85, 0.22);
+  color: #fff1c8;
+}
+
+.meta-start-console {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid rgba(112, 184, 173, 0.25);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(13, 20, 21, 0.9), rgba(4, 6, 7, 0.94)),
+    repeating-linear-gradient(135deg, rgba(112, 184, 173, 0.04) 0 1px, transparent 1px 7px);
+  padding: 12px;
+}
+
+.meta-start-console h3 {
+  margin: 3px 0 6px;
+  color: rgba(245, 236, 217, 0.9);
+  font-size: 18px;
+}
+
+.meta-start-console p {
+  margin: 0;
+  color: rgba(238, 231, 216, 0.6);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.meta-compendium-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.meta-compendium-grid article {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid rgba(238, 231, 216, 0.13);
+  border-radius: 8px;
+  background: rgba(7, 10, 11, 0.74);
+  padding: 12px;
+}
+
+.meta-compendium-grid strong {
+  color: #f3e6cf;
+  font-size: 14px;
+}
+
+.meta-compendium-grid span {
+  color: rgba(238, 231, 216, 0.64);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.tool-button.is-touch-tooltip .tool-tooltip,
+.meta-item-card.is-touch-tooltip .meta-item-tooltip,
+.intel-token.is-touch-tooltip .intel-tooltip {
+  display: grid;
+  gap: 7px;
+}
+
 @media (max-width: 760px) {
   body {
     overflow: auto;
@@ -2044,7 +2535,15 @@ button[data-tutorial-highlight="true"]::after {
     bottom: 72px;
   }
 
-  .metagame-panel.is-lobby,
+  .metagame-panel.is-lobby {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: auto;
+    max-height: none;
+  }
+
   .metagame-panel.is-compact {
     top: 150px;
     left: 12px;
@@ -2112,6 +2611,236 @@ button[data-tutorial-highlight="true"]::after {
 
   .pickup-options button {
     min-height: 142px;
+  }
+}
+
+@media (max-width: 760px) {
+  .metagame-panel.is-lobby {
+    inset: 0;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 9px;
+    width: auto;
+    max-height: none;
+    border-radius: 0;
+    padding: 10px 10px 86px;
+  }
+
+  .metagame-panel.is-lobby.view-account {
+    right: 0;
+    width: auto;
+  }
+
+  .meta-lobby-topbar {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .meta-player-chip {
+    min-height: 58px;
+    padding: 8px 9px;
+  }
+
+  .meta-player-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .meta-player-chip strong,
+  .meta-current-route strong {
+    font-size: 15px;
+  }
+
+  .meta-resource-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .meta-resource-strip span {
+    min-height: 48px;
+    padding: 6px;
+  }
+
+  .meta-resource-strip strong {
+    font-size: 13px;
+  }
+
+  .meta-resource-strip small,
+  .meta-player-chip small,
+  .meta-current-route small {
+    font-size: 10px;
+  }
+
+  .meta-current-route {
+    min-height: 52px;
+    padding: 8px 9px;
+  }
+
+  .meta-shell-layout {
+    display: block;
+  }
+
+  .meta-page-title {
+    margin-bottom: 6px;
+  }
+
+  .meta-page-title h2 {
+    font-size: 22px;
+  }
+
+  .meta-shell-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    display: block;
+    border-top: 1px solid rgba(238, 231, 216, 0.12);
+    background:
+      linear-gradient(180deg, rgba(12, 16, 17, 0.9), rgba(4, 6, 7, 0.98)),
+      repeating-linear-gradient(135deg, rgba(213, 170, 85, 0.04) 0 1px, transparent 1px 7px);
+    box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.42);
+    padding: 8px 8px 10px;
+  }
+
+  .meta-rail-start {
+    display: none;
+  }
+
+  .meta-nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+    margin: 0;
+  }
+
+  .meta-nav button {
+    justify-items: center;
+    min-height: 54px;
+    padding: 6px 4px;
+    text-align: center;
+  }
+
+  .meta-nav button strong {
+    font-size: 12px;
+  }
+
+  .meta-nav button small {
+    display: none;
+  }
+
+  .meta-battle-stage {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .meta-map-carousel {
+    min-height: min(56vh, 520px);
+    border-radius: 12px;
+  }
+
+  .meta-map-card {
+    padding: 14px;
+  }
+
+  .meta-map-card.is-active {
+    width: 78%;
+    height: 77%;
+  }
+
+  .meta-map-card.is-ghost {
+    width: 42%;
+    height: 66%;
+    opacity: 0.44;
+  }
+
+  .meta-map-card.is-prev {
+    transform: translate(-34%, -50%) scale(0.88);
+  }
+
+  .meta-map-card.is-next {
+    transform: translate(34%, -50%) scale(0.88);
+  }
+
+  .meta-map-rank {
+    top: 12px;
+    left: 12px;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .meta-map-card::before {
+    inset: 12px 12px auto auto;
+    width: 78px;
+    height: 78px;
+    background-size: 13px 13px;
+  }
+
+  .meta-map-copy strong {
+    font-size: 24px;
+  }
+
+  .meta-map-copy small,
+  .meta-map-copy em {
+    font-size: 12px;
+  }
+
+  .meta-map-tags {
+    gap: 5px;
+    margin-top: 8px;
+  }
+
+  .meta-map-tags b {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+
+  .meta-carousel-arrow {
+    width: 36px;
+    height: 54px;
+    font-size: 30px;
+  }
+
+  .meta-carousel-arrow.is-left {
+    left: 10px;
+  }
+
+  .meta-carousel-arrow.is-right {
+    right: 10px;
+  }
+
+  .meta-carousel-pips {
+    bottom: 12px;
+  }
+
+  .meta-carousel-pips button {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+
+  .meta-start-console {
+    padding: 10px;
+  }
+
+  .meta-action-row .start-run-button,
+  .start-run-button {
+    width: 100%;
+    min-height: 48px;
+    margin-top: 0;
+  }
+
+  .meta-home-grid,
+  .meta-compendium-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .meta-item-card.is-touch-tooltip .meta-item-tooltip {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: auto;
+    left: 0;
+    width: min(340px, calc(100vw - 36px));
+    pointer-events: none;
   }
 }
 

@@ -37,15 +37,20 @@ let tutorialPreference: TutorialPreference | null = readTutorialPreference();
 let activeTutorial: TutorialMessage | undefined;
 const shownTutorialIds = new Set<string>();
 const shownScriptedTutorialSteps = new Set<string>();
-type MetagameView = "home" | "account" | "shop" | "stash";
+type MetagameView = "home" | "account" | "shop" | "stash" | "compendium";
 const metagameViews: Array<{ id: MetagameView; label: string; hint: string }> = [
-  { id: "home", label: "行动", hint: "地图/战备/出发" },
-  { id: "shop", label: "商店", hint: "购买补给" },
-  { id: "stash", label: "仓库", hint: "带入/出售" },
-  { id: "account", label: "档案", hint: "属性/账号" }
+  { id: "shop", label: "商城", hint: "购买补给" },
+  { id: "account", label: "角色", hint: "属性/账号" },
+  { id: "home", label: "战斗", hint: "地图/出发" },
+  { id: "stash", label: "背包", hint: "带入/出售" },
+  { id: "compendium", label: "百科", hint: "规则索引" }
 ];
 let activeMetagameView: MetagameView = "home";
 let lastRenderedMetagameView: MetagameView = activeMetagameView;
+let carouselPointerStart: { x: number; y: number; prevTierId?: string; nextTierId?: string } | undefined;
+let longPressTimer: number | undefined;
+let touchTooltipTarget: HTMLElement | undefined;
+let suppressNextHudClick = false;
 
 const actionLabels = {
   attack: "进攻",
@@ -213,16 +218,14 @@ function renderHud(): void {
       </section>`
     : "";
   const feedbackToast = activeFeedback ? feedbackToastMarkup(activeFeedback) : "";
-  const tutorialLayer = !activeFeedback && (!meta || meta.activeRun) ? tutorialLayerMarkup(state) : "";
+  const showRunHud = !meta || meta.activeRun;
+  const tutorialLayer = !activeFeedback && showRunHud ? tutorialLayerMarkup(state) : "";
   const metagamePanel = meta ? metagamePanelMarkup(meta) : "";
-
-  hud.innerHTML = `
-    <main class="hud-shell">
-      ${healthFeedbackMarkup(healthFeedback)}
-      <section class="topbar">
+  const topbar = showRunHud
+    ? `<section class="topbar">
         <div>
           <span class="eyebrow">照面之时</span>
-          <h1>${meta ? "游戏外壳 / 战备终端" : "黑暗迷宫原型"}</h1>
+          <h1>${meta ? "迷宫行动" : "黑暗迷宫原型"}</h1>
         </div>
         <div class="stats">
           ${meta ? `<span>金币 ${meta.profile.gold}</span><span>${escapeHtml(meta.selectedMapTier.name)}</span><span>战备 ${meta.deploymentValue}/${meta.selectedMapTier.deploymentValueCap}</span>` : ""}
@@ -235,9 +238,10 @@ function renderHud(): void {
           <span>速度 ${state.player.stats.speed}</span>
           <span>体质 ${state.player.stats.constitution}</span>
         </div>
-      </section>
-      ${metagamePanel}
-      <section class="side-panel">
+      </section>`
+    : "";
+  const runSidePanel = showRunHud
+    ? `<section class="side-panel">
         <div class="panel-block inventory-panel">
           <h2>携带物</h2>
           <div class="inventory">${inventory || "<p>背包是空的。</p>"}</div>
@@ -246,15 +250,26 @@ function renderHud(): void {
           <h2>记录</h2>
           <ul class="log">${log}</ul>
         </div>
-      </section>
-      <section class="command-strip">
+      </section>`
+    : "";
+  const runCommandStrip = showRunHud
+    ? `<section class="command-strip">
         <button data-command="restart">重开</button>
-      </section>
+      </section>`
+    : "";
+
+  hud.innerHTML = `
+    <main class="hud-shell">
+      ${showRunHud ? healthFeedbackMarkup(healthFeedback) : ""}
+      ${topbar}
+      ${metagamePanel}
+      ${runSidePanel}
+      ${runCommandStrip}
       ${feedbackToast}
       ${tutorialLayer}
-      ${pickupPanel}
-      ${battlePanel}
-      ${outcome}
+      ${showRunHud ? pickupPanel : ""}
+      ${showRunHud ? battlePanel : ""}
+      ${showRunHud ? outcome : ""}
     </main>`;
 
   const roundLog = hud.querySelector<HTMLOListElement>(".rounds");
@@ -265,6 +280,15 @@ function renderHud(): void {
 
 hud.addEventListener("click", (event) => {
   const target = event.target as HTMLElement;
+  if (suppressNextHudClick) {
+    const shouldSuppress = !touchTooltipTarget || touchTooltipTarget === target || touchTooltipTarget.contains(target);
+    suppressNextHudClick = false;
+    if (shouldSuppress) {
+      event.preventDefault();
+      return;
+    }
+  }
+  if (!target.closest(".is-touch-tooltip")) hideTouchTooltip();
   const button = target.closest("button") as HTMLButtonElement | null;
   if (!button || button.disabled) return;
   if (button.dataset.feedbackConfirm) {
@@ -310,6 +334,61 @@ hud.addEventListener("click", (event) => {
 
   renderHud();
 });
+
+hud.addEventListener("pointerdown", (event) => {
+  const target = event.target as HTMLElement;
+  const carousel = target.closest<HTMLElement>(".meta-map-carousel");
+  if (carousel) {
+    carouselPointerStart = {
+      x: event.clientX,
+      y: event.clientY,
+      prevTierId: carousel.dataset.prevTier,
+      nextTierId: carousel.dataset.nextTier
+    };
+  }
+
+  const hoverless = globalThis.matchMedia?.("(hover: none)").matches ?? false;
+  if (event.pointerType === "mouse" && !hoverless) return;
+  const tooltipHost = target.closest<HTMLElement>(".meta-item-card, .tool-button, .intel-token, .effect-chip");
+  if (!tooltipHost) return;
+  window.clearTimeout(longPressTimer);
+  longPressTimer = window.setTimeout(() => {
+    hideTouchTooltip();
+    tooltipHost.classList.add("is-touch-tooltip");
+    touchTooltipTarget = tooltipHost;
+    suppressNextHudClick = true;
+  }, 520);
+});
+
+hud.addEventListener("pointerup", (event) => {
+  window.clearTimeout(longPressTimer);
+  longPressTimer = undefined;
+  if (!carouselPointerStart) return;
+  const deltaX = event.clientX - carouselPointerStart.x;
+  const deltaY = event.clientY - carouselPointerStart.y;
+  if (Math.abs(deltaX) > 46 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+    const tierId = deltaX < 0 ? carouselPointerStart.nextTierId : carouselPointerStart.prevTierId;
+    if (tierId) {
+      (simulation as Partial<MetagamePort>).selectMapTier?.(tierId as MapTierId);
+      suppressNextHudClick = true;
+      event.preventDefault();
+      renderHud();
+    }
+  }
+  carouselPointerStart = undefined;
+});
+
+hud.addEventListener("pointercancel", () => {
+  window.clearTimeout(longPressTimer);
+  longPressTimer = undefined;
+  carouselPointerStart = undefined;
+});
+
+function hideTouchTooltip(): void {
+  if (touchTooltipTarget) touchTooltipTarget.classList.remove("is-touch-tooltip");
+  touchTooltipTarget = undefined;
+  hud.querySelectorAll(".is-touch-tooltip").forEach((element) => element.classList.remove("is-touch-tooltip"));
+}
 
 window.addEventListener("keydown", (event) => {
   const meta = simulation.metaSnapshot?.();
@@ -622,12 +701,14 @@ function handleMetagameAction(button: HTMLButtonElement, command: string): boole
 }
 
 function isMetagameView(value: string | undefined): value is MetagameView {
-  return value === "home" || value === "account" || value === "shop" || value === "stash";
+  return value === "home" || value === "account" || value === "shop" || value === "stash" || value === "compendium";
 }
 
 function metagamePanelMarkup(meta: MetagameState): string {
   const profile = meta.profile;
   const statTotal = Object.values(profile.stats).reduce((sum, value) => sum + value, 0);
+  const profileLevel = Math.max(1, profile.runsCompleted + 1);
+  const shortProfileId = profile.id.length > 10 ? profile.id.slice(-10) : profile.id;
   const summary = profile.lastRunSummary
     ? `<p class="meta-summary">${profile.lastRunSummary.outcome === "extracted" ? "上局撤离" : "上局失败"}：回收 ${profile.lastRunSummary.itemsRecovered} 件，丢失 ${profile.lastRunSummary.itemsLost} 件，金币 +${profile.lastRunSummary.lootGold}</p>`
     : "";
@@ -639,6 +720,7 @@ function metagamePanelMarkup(meta: MetagameState): string {
       </button>`
     )
     .join("");
+  const startStatus = meta.canStartRun ? "可以进入" : "金币不足或战备超限";
 
   if (meta.activeRun) {
     return `<section class="metagame-panel is-compact">
@@ -649,32 +731,55 @@ function metagamePanelMarkup(meta: MetagameState): string {
   }
 
   return `<section class="metagame-panel is-lobby view-${activeMetagameView}" role="dialog" aria-label="战备区">
-    <div class="meta-header">
-      <div>
-        <span class="eyebrow">局外战备</span>
-        <h2>${escapeHtml(metagameViewTitle(activeMetagameView))}</h2>
+    <header class="meta-lobby-topbar">
+      <div class="meta-player-chip">
+        <span class="meta-player-avatar" aria-hidden="true">照</span>
+        <div>
+          <span class="eyebrow">本地档案</span>
+          <strong>${escapeHtml(shortProfileId)}</strong>
+          <small>等级 ${profileLevel} / 属性 ${statTotal}</small>
+        </div>
       </div>
-      <strong>${profile.gold} 金币</strong>
-    </div>
-    <nav class="meta-nav" aria-label="局外页面">${nav}</nav>
-    <div class="meta-profile-strip">
-      <span>属性总值 ${statTotal}</span>
-      <span>地图 ${escapeHtml(meta.selectedMapTier.name)}</span>
-      <span>入场费 ${meta.selectedMapTier.entryFee}</span>
-      <span>战备 ${meta.deploymentValue}/${meta.selectedMapTier.deploymentValueCap}</span>
-      <span>仓库 ${profile.stash.length}</span>
-    </div>
+      <div class="meta-resource-strip" aria-label="玩家资源">
+        <span><strong>${profile.gold}</strong><small>金币</small></span>
+        <span><strong>${escapeHtml(statBandLabel(profile.statBandId))}</strong><small>属性档</small></span>
+        <span><strong>${profile.stash.length}</strong><small>背包库存</small></span>
+        <span><strong>${meta.deploymentValue}/${meta.selectedMapTier.deploymentValueCap}</strong><small>战备</small></span>
+      </div>
+      <div class="meta-current-route">
+        <span class="eyebrow">当前地图</span>
+        <strong>${escapeHtml(meta.selectedMapTier.name)}</strong>
+        <small>入场 ${meta.selectedMapTier.entryFee} / ${startStatus}</small>
+      </div>
+    </header>
     ${meta.message ? `<p class="meta-message">${escapeHtml(meta.message)}</p>` : ""}
-    ${summary}
-    <div class="meta-view">${metagameViewMarkup(meta, statTotal)}</div>
+    <div class="meta-shell-layout">
+      <div class="meta-stage-area">
+        <div class="meta-page-title">
+          <span class="eyebrow">照面之时</span>
+          <h2>${escapeHtml(metagameViewTitle(activeMetagameView))}</h2>
+        </div>
+        ${summary}
+        <div class="meta-view">${metagameViewMarkup(meta, statTotal)}</div>
+      </div>
+      <aside class="meta-shell-nav" aria-label="局外导航">
+        <button class="meta-rail-start" data-meta-command="start-run" ${meta.canStartRun ? "" : "disabled"}>
+          <span class="eyebrow">进入地图</span>
+          <strong>开始行动</strong>
+          <small>${escapeHtml(meta.selectedMapTier.name)} · 入场 ${meta.selectedMapTier.entryFee}</small>
+        </button>
+        <nav class="meta-nav" aria-label="局外页面">${nav}</nav>
+      </aside>
+    </div>
   </section>`;
 }
 
 function metagameViewTitle(view: MetagameView): string {
-  if (view === "home") return "行动选择";
-  if (view === "account") return "档案、属性与账号预留";
-  if (view === "shop") return "购买与刷新补给";
-  return "仓库管理";
+  if (view === "home") return "地图行动";
+  if (view === "account") return "角色档案";
+  if (view === "shop") return "补给商城";
+  if (view === "stash") return "背包仓库";
+  return "百科索引";
 }
 
 function metagameViewMarkup(meta: MetagameState, statTotal: number): string {
@@ -682,6 +787,7 @@ function metagameViewMarkup(meta: MetagameState, statTotal: number): string {
   if (activeMetagameView === "account") return metagameAccountView(meta, statTotal);
   if (activeMetagameView === "shop") return metagameShopView(meta);
   if (activeMetagameView === "stash") return metagameStashView(meta);
+  if (activeMetagameView === "compendium") return metagameCompendiumView(meta);
   return metagameHomeView(meta);
 }
 
@@ -692,53 +798,43 @@ function metagameHomeView(meta: MetagameState): string {
     : "还没有行动记录";
   const deployment = profile.deployment.map((slot) => deploymentSlotCard(slot, meta.activeRun)).join("");
   const loadoutState = meta.canStartRun ? "可以进场" : "金币不足或战备超限";
-  const tiers = meta.mapTiers
+  const selectedIndex = Math.max(0, meta.mapTiers.findIndex((tier) => tier.id === profile.selectedMapTierId));
+  const selectedTier = meta.mapTiers[selectedIndex] ?? meta.selectedMapTier;
+  const previousTier = meta.mapTiers[(selectedIndex - 1 + meta.mapTiers.length) % meta.mapTiers.length] ?? selectedTier;
+  const nextTier = meta.mapTiers[(selectedIndex + 1) % meta.mapTiers.length] ?? selectedTier;
+  const pips = meta.mapTiers
     .map(
-      (tier) => `<button data-meta-command="select-tier" data-tier-id="${tier.id}" class="${tier.id === profile.selectedMapTierId ? "is-selected" : ""}" ${meta.activeRun ? "disabled" : ""} title="${escapeHtml(tier.description)}">
-        <strong>${escapeHtml(tier.name)}</strong>
-        <small>入场 ${tier.entryFee} / 战备 ${tier.deploymentValueCap} / 敌人 ${tier.enemyStatTotalRange[0]}-${tier.enemyStatTotalRange[1]}</small>
-        <span>${escapeHtml(tier.description)}</span>
+      (tier) => `<button class="${tier.id === selectedTier.id ? "is-active" : ""}" data-meta-command="select-tier" data-tier-id="${tier.id}" aria-label="选择${escapeHtml(tier.name)}">
+        <span>${tier.rank}</span>
       </button>`
     )
     .join("");
   return `<section class="meta-section meta-home-view">
-    <div class="meta-hero">
-      <span class="meta-brand-mark" aria-hidden="true"></span>
-      <div class="meta-hero-copy">
-        <span class="eyebrow">黑暗迷宫搜打撤</span>
-        <h3>照面之时</h3>
-        <p>带着有限战备进入无视野迷宫，拾取道具、判断敌人、短促交锋，然后找到出口把战利带回来。</p>
-      </div>
-    </div>
-    <div class="meta-home-entry-grid">
-      <section class="meta-entry-window meta-map-window">
-        <div class="meta-section-head">
-          <div>
-            <h3>选择行动区域</h3>
-            <p>关卡档位是本页最重要的决定：它决定入场费、可携带战备上限、敌人数值、掉落稀有度和附魔机会。</p>
-          </div>
-          <span class="meta-pill">当前 ${escapeHtml(meta.selectedMapTier.name)}</span>
-        </div>
-        <div class="tier-list is-entry">${tiers}</div>
+    <div class="meta-battle-stage">
+      <section class="meta-map-carousel" data-prev-tier="${previousTier.id}" data-next-tier="${nextTier.id}" aria-label="地图档位轮播">
+        ${mapTierCardMarkup(previousTier, "is-ghost is-prev")}
+        ${mapTierCardMarkup(nextTier, "is-ghost is-next")}
+        <button class="meta-carousel-arrow is-left" data-meta-command="select-tier" data-tier-id="${previousTier.id}" aria-label="上一张地图">‹</button>
+        ${mapTierCardMarkup(selectedTier, "is-active")}
+        <button class="meta-carousel-arrow is-right" data-meta-command="select-tier" data-tier-id="${nextTier.id}" aria-label="下一张地图">›</button>
+        <div class="meta-carousel-pips" aria-label="地图档位">${pips}</div>
       </section>
-      <aside class="meta-entry-window meta-launch-window">
-        <div class="meta-section-head">
-          <div>
-            <h3>入场检查 <small>${meta.deploymentValue}/${meta.selectedMapTier.deploymentValueCap}</small></h3>
-            <p>战备是进入前的临门选择。失败会丢失携带物；撤离成功才会带回。</p>
-          </div>
-          <span class="meta-pill">${loadoutState}</span>
+      <aside class="meta-start-console">
+        <div>
+          <span class="eyebrow">入场检查</span>
+          <h3>${loadoutState}</h3>
+          <p>选择地图后检查入场费和战备上限。失败会丢失带入物，撤离成功才会带回本局所得。</p>
         </div>
         <div class="meta-loadout-summary">
-          <span>地图：${escapeHtml(meta.selectedMapTier.name)}</span>
-          <span>入场费：${meta.selectedMapTier.entryFee}</span>
-          <span>金币：${profile.gold}</span>
+          <span>入场费 ${selectedTier.entryFee}</span>
+          <span>敌人 ${selectedTier.enemyStatTotalRange[0]}-${selectedTier.enemyStatTotalRange[1]}</span>
+          <span>掉落 ${tierRarityLine(selectedTier)}</span>
         </div>
-        <div class="meta-item-list meta-entry-loadout">${deployment || "<p>还没有带入物品。去仓库选择要冒险带入的装备。</p>"}</div>
+        <div class="meta-item-list meta-entry-loadout">${deployment || "<p>还没有带入物品。去背包选择要冒险带入的装备。</p>"}</div>
         <div class="meta-actions meta-action-row">
-          <button class="start-run-button meta-primary-cta" data-meta-command="start-run" ${meta.canStartRun ? "" : "disabled"}>支付入场费并开始</button>
-          <button data-meta-command="set-meta-view" data-meta-view="stash">调整携带</button>
-          <button data-meta-command="set-meta-view" data-meta-view="shop">购买补给</button>
+          <button class="start-run-button meta-primary-cta" data-meta-command="start-run" ${meta.canStartRun ? "" : "disabled"}>开始行动</button>
+          <button data-meta-command="set-meta-view" data-meta-view="stash">调整背包</button>
+          <button data-meta-command="tutorial-run">训练教程</button>
         </div>
       </aside>
     </div>
@@ -748,23 +844,63 @@ function metagameHomeView(meta: MetagameState): string {
         <span>进场 → 搜刮/交战 → 找出口撤离</span>
       </article>
       <article>
-        <strong>当前档位</strong>
-        <span>${escapeHtml(meta.selectedMapTier.name)} · 入场 ${meta.selectedMapTier.entryFee}</span>
+        <strong>当前地图</strong>
+        <span>${escapeHtml(selectedTier.name)} · 入场 ${selectedTier.entryFee}</span>
       </article>
       <article>
         <strong>战备状态</strong>
-        <span>${meta.deploymentValue}/${meta.selectedMapTier.deploymentValueCap} · ${meta.canStartRun ? "可出发" : "需调整"}</span>
+        <span>${meta.deploymentValue}/${selectedTier.deploymentValueCap} · ${meta.canStartRun ? "可出发" : "需调整"}</span>
       </article>
       <article>
         <strong>档案记录</strong>
         <span>${escapeHtml(lastRun)}</span>
       </article>
     </div>
-    <div class="meta-home-actions">
-      <button data-meta-command="tutorial-run">训练教程</button>
-      <button data-meta-command="set-meta-view" data-meta-view="account">查看属性</button>
-      <button data-meta-command="set-meta-view" data-meta-view="shop">补给商店</button>
-      <button data-meta-command="set-meta-view" data-meta-view="stash">仓库整备</button>
+  </section>`;
+}
+
+function mapTierCardMarkup(tier: MetagameState["mapTiers"][number], variantClass: string): string {
+  return `<button class="meta-map-card ${variantClass}" data-meta-command="select-tier" data-tier-id="${tier.id}" title="${escapeHtml(tier.description)}">
+    <span class="meta-map-rank">第 ${tier.rank} 档</span>
+    <span class="meta-map-art" aria-hidden="true"></span>
+    <span class="meta-map-copy">
+      <strong>${escapeHtml(tier.name)}</strong>
+      <small>入场 ${tier.entryFee} / 战备 ${tier.deploymentValueCap} / 敌人 ${tier.enemyStatTotalRange[0]}-${tier.enemyStatTotalRange[1]}</small>
+      <em>${escapeHtml(tier.description)}</em>
+    </span>
+    <span class="meta-map-tags">
+      <b>${tierRarityLine(tier)}</b>
+      <b>${tier.naturalAffixChance > 0 ? `附魔 ${tier.naturalAffixChance}%` : "无自然附魔"}</b>
+      <b>${tier.enemyStartsWithEnchantedItem ? "敌人携带附魔" : "常规敌人"}</b>
+    </span>
+  </button>`;
+}
+
+function tierRarityLine(tier: MetagameState["mapTiers"][number]): string {
+  const parts: string[] = [];
+  if (tier.rarityWeights.common > 0) parts.push("白");
+  if (tier.rarityWeights.uncommon > 0) parts.push("蓝");
+  if (tier.rarityWeights.rare > 0) parts.push("橙");
+  if (tier.rarityWeights.mythic > 0 || tier.mythicGemOfferChance > 0) parts.push("红");
+  return parts.join("/") || "无";
+}
+
+function metagameCompendiumView(meta: MetagameState): string {
+  return `<section class="meta-section meta-compendium-view">
+    <div class="meta-section-head">
+      <div>
+        <h3>百科索引</h3>
+        <p>这里收束玩家在大厅需要反复查看的规则：搜打撤目标、属性作用、道具触发、附魔稀有度和地图档位差异。</p>
+      </div>
+      <span class="meta-pill">${escapeHtml(meta.selectedMapTier.name)}</span>
+    </div>
+    <div class="meta-compendium-grid">
+      <article><strong>游戏目标</strong><span>带入战备进迷宫，搜集道具并找出口撤离。失败会失去带入物与本局所得。</span></article>
+      <article><strong>五维属性</strong><span>精神看视野与掉落感知，智力看情报与说服，力量看伤害，速度看先手/闪避/逃跑，体质看生命与重伤抗性。</span></article>
+      <article><strong>战斗优势</strong><span>优势是可积累资源，可用于逃跑、说服、续战加成和部分强力道具。</span></article>
+      <article><strong>道具规则</strong><span>商店和背包卡片可悬浮查看详情；手机端长按卡片查看同样信息。</span></article>
+      <article><strong>地图档位</strong><span>高档地图入场费和战备上限更高，敌人更强，稀有与附魔收益也更高。</span></article>
+      <article><strong>当前选择</strong><span>${escapeHtml(meta.selectedMapTier.name)}：入场 ${meta.selectedMapTier.entryFee}，敌人 ${meta.selectedMapTier.enemyStatTotalRange[0]}-${meta.selectedMapTier.enemyStatTotalRange[1]}。</span></article>
     </div>
   </section>`;
 }
