@@ -982,13 +982,13 @@ button[data-tutorial-highlight="true"]::after {
 .pickup-panel {
   position: absolute;
   left: 50%;
-  bottom: 24px;
-  transform: translateX(-50%);
   padding: 14px;
   pointer-events: auto;
 }
 
 .battle-panel {
+  bottom: 24px;
+  transform: translateX(-50%);
   width: min(580px, calc(100vw - 48px));
   display: flex;
   flex-direction: column;
@@ -997,28 +997,79 @@ button[data-tutorial-highlight="true"]::after {
 }
 
 .pickup-panel {
-  width: min(620px, calc(100vw - 48px));
+  top: 50%;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(920px, calc(100vw - 72px));
+  min-height: min(430px, calc(100vh - 176px));
+  max-height: min(700px, calc(100vh - 136px));
+  padding: 18px;
+  transform: translate(-50%, -50%);
+}
+
+.pickup-panel.is-collapsed {
+  top: auto;
+  bottom: 24px;
+  left: 50%;
+  z-index: 8;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: min(360px, calc(100vw - 48px));
+  min-height: 0;
+  max-height: none;
+  padding: 12px;
+  transform: translateX(-50%);
+}
+
+.pickup-panel.is-collapsed h2 {
+  font-size: 15px;
+}
+
+.pickup-panel .battle-header {
+  flex: 0 0 auto;
+  align-items: start;
+}
+
+.pickup-panel .battle-header h2 {
+  font-size: clamp(24px, 3vw, 34px);
+}
+
+.pickup-toggle {
+  flex: 0 0 auto;
+  border-color: rgba(112, 184, 173, 0.34);
+  background:
+    linear-gradient(180deg, rgba(22, 36, 37, 0.86), rgba(6, 9, 10, 0.92));
+  color: rgba(230, 246, 244, 0.88);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .pickup-options {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 12px;
+  flex: 1 1 auto;
+  gap: 12px;
+  min-height: 0;
 }
 
 .pickup-options button {
   display: grid;
   align-content: start;
   justify-items: start;
-  gap: 6px;
-  min-height: 152px;
+  gap: 10px;
+  min-height: 260px;
   border-left-width: 3px;
   border-top-color: rgba(112, 184, 173, 0.18);
   background:
     linear-gradient(180deg, rgba(34, 42, 42, 0.92), rgba(12, 15, 16, 0.96)),
     linear-gradient(135deg, rgba(213, 170, 85, 0.08), transparent 42%);
   text-align: left;
+  padding: 16px;
 }
 
 .pickup-options button::after {
@@ -1037,8 +1088,20 @@ button[data-tutorial-highlight="true"]::after {
   overflow-wrap: anywhere;
 }
 
+.pickup-options strong {
+  color: #f5ecd9;
+  font-size: 22px;
+  line-height: 1.12;
+}
+
+.pickup-options small,
+.pickup-limit {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .skip-pickup {
-  margin-top: 8px;
+  align-self: start;
 }
 
 .pickup-panel.is-starter .skip-pickup {
@@ -2920,9 +2983,25 @@ button[data-tutorial-highlight="true"]::after {
     width: min(440px, calc(100vw - 24px));
   }
 
-  .battle-panel,
-  .pickup-panel {
+  .battle-panel {
     bottom: 72px;
+  }
+
+  .pickup-panel {
+    top: 50%;
+    bottom: auto;
+    width: calc(100vw - 24px);
+    min-height: min(560px, calc(100dvh - 136px));
+    max-height: calc(100dvh - 112px);
+    transform: translate(-50%, -50%);
+  }
+
+  .pickup-panel.is-collapsed {
+    top: auto;
+    bottom: 72px;
+    width: min(340px, calc(100vw - 24px));
+    min-height: 0;
+    transform: translateX(-50%);
   }
 
   .metagame-panel.is-lobby {
@@ -2994,13 +3073,18 @@ button[data-tutorial-highlight="true"]::after {
   }
 
   .battle-actions,
-  .intel-list ul,
-  .pickup-options {
+  .intel-list ul {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .pickup-options {
+    grid-template-columns: 1fr;
+    overflow: auto;
+    padding-right: 2px;
+  }
+
   .pickup-options button {
-    min-height: 142px;
+    min-height: 168px;
   }
 }
 

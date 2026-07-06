@@ -52,6 +52,8 @@ let longPressTimer: number | undefined;
 let touchTooltipTarget: HTMLElement | undefined;
 let suppressNextHudClick = false;
 let pendingRunConfirm = false;
+let pickupPanelCollapsed = false;
+let lastPickupOfferKey: string | undefined;
 
 const actionLabels = {
   attack: "进攻",
@@ -74,6 +76,14 @@ function renderHud(): void {
   const encounter = state.encounter;
   const encounterEnemy = encounter ? state.map.aiUnits.find((unit) => unit.id === encounter.enemyId) : undefined;
   const pickup = state.pendingPickupOffer;
+  const pickupOfferKey = pickup ? `${pickup.nodeId}:${pickup.itemIds.join("|")}` : undefined;
+  if (!pickupOfferKey) {
+    pickupPanelCollapsed = false;
+    lastPickupOfferKey = undefined;
+  } else if (lastPickupOfferKey !== pickupOfferKey) {
+    pickupPanelCollapsed = false;
+    lastPickupOfferKey = pickupOfferKey;
+  }
   const isStarterPickup = pickup?.nodeId === "starter";
   const hideStarterChoiceForTutorialNotice = Boolean(
     activeFeedback?.kind === "tutorial" && isStarterPickup && tutorialPreference === "on"
@@ -188,12 +198,21 @@ function renderHud(): void {
     : "";
 
   const pickupPanel = pickup && !hideStarterChoiceForTutorialNotice
-    ? `<section class="pickup-panel ${isStarterPickup ? "is-starter" : ""}">
+    ? pickupPanelCollapsed
+      ? `<section class="pickup-panel is-collapsed ${isStarterPickup ? "is-starter" : ""}" role="dialog" aria-label="${isStarterPickup ? "开局装备选择已收起" : "道具节点选择已收起"}">
+        <div>
+          <span class="eyebrow">${isStarterPickup ? "开局装备" : "道具节点"}</span>
+          <h2>${isStarterPickup ? "选择已收起" : "三选一已收起"}</h2>
+        </div>
+        <button class="pickup-toggle" data-pickup-toggle="expand">展开</button>
+      </section>`
+      : `<section class="pickup-panel ${isStarterPickup ? "is-starter" : ""}" role="dialog" aria-label="${isStarterPickup ? "开局装备选择" : "道具节点三选一"}">
         <div class="battle-header">
           <div>
             <span class="eyebrow">${isStarterPickup ? "开局装备" : "道具节点"}</span>
             <h2>${isStarterPickup ? "先带一件进场" : "三选一"}</h2>
           </div>
+          <button class="pickup-toggle" data-pickup-toggle="collapse" title="收起选择面板，查看地图。">收起</button>
         </div>
         <div class="pickup-options">
           ${pickup.itemIds
@@ -305,7 +324,14 @@ hud.addEventListener("click", (event) => {
   const special = button.dataset.special;
   const tutorialAction = button.dataset.tutorial;
   const metaCommand = button.dataset.metaCommand;
+  const pickupToggle = button.dataset.pickupToggle;
   if (metaCommand && handleMetagameAction(button, metaCommand)) {
+    renderHud();
+    return;
+  }
+
+  if (pickupToggle) {
+    pickupPanelCollapsed = pickupToggle === "collapse";
     renderHud();
     return;
   }
@@ -324,8 +350,14 @@ hud.addEventListener("click", (event) => {
     clearFeedbackToast();
     simulation.reset(createRunSeed());
   }
-  if (pickupItem) simulation.choosePickup(pickupItem);
-  if (button.dataset.skipPickup) simulation.choosePickup(null);
+  if (pickupItem) {
+    pickupPanelCollapsed = false;
+    simulation.choosePickup(pickupItem);
+  }
+  if (button.dataset.skipPickup) {
+    pickupPanelCollapsed = false;
+    simulation.choosePickup(null);
+  }
   if (action) simulation.playCombatAction(toCombatAction(action));
   if (item) simulation.useItem(item);
   if (special === "flee") simulation.tryFlee();
